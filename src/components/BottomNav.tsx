@@ -2,10 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Trophy, Users, FileText } from "lucide-react";
+import { Home, Trophy, Users, FileText, LogOut } from "lucide-react";
+import { logoutAdmin } from "@/app/login/actions";
 
 export default function BottomNav() {
   const pathname = usePathname();
+
+  // Oylama ve login sayfalarında alt menüyü gizle
+  if (pathname?.startsWith("/vote") || pathname?.startsWith("/login")) {
+    return null;
+  }
 
   return (
     <nav className="bottom-nav">
@@ -28,6 +34,11 @@ export default function BottomNav() {
         <FileText className="nav-icon" />
         <span className="nav-text">Rapor</span>
       </Link>
+
+      <button onClick={() => logoutAdmin()} className="nav-item text-red-500 hover:text-red-700">
+        <LogOut className="nav-icon text-red-500" />
+        <span className="nav-text text-red-500">Çıkış</span>
+      </button>
     </nav>
   );
 }
