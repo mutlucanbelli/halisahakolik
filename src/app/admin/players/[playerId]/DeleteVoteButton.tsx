@@ -2,18 +2,18 @@
 
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
-import { deleteVote } from "./actions";
+import { deleteCouncilVote } from "./actions";
 
 export default function DeleteVoteButton({ voteId, playerId }: { voteId: string, playerId: string }) {
   const [loading, setLoading] = useState(false);
 
   const handleDelete = async () => {
-    if (!window.confirm("Bu oyu iptal etmek/sıfırlamak istediğinize emin misiniz? (Bu işlem geri alınamaz)")) {
+    if (!window.confirm("Bu oyu iptal etmek/sıfırlamak istediğinize emin misiniz? (Oyuncunun ortalaması yeniden hesaplanacaktır)")) {
       return;
     }
 
     setLoading(true);
-    const res = await deleteVote(voteId, playerId);
+    const res = await deleteCouncilVote(voteId, playerId);
     
     if (res?.error) {
       alert(res.error);

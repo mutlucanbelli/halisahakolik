@@ -14,24 +14,22 @@ export default async function PlayerDetailsPage({ params }: { params: Promise<{ 
     return <div className="container py-12 text-center">Oyuncu bulunamadı.</div>;
   }
 
-  // Başkalarından aldığı oylar
-  const receivedVotes = await prisma.vote.findMany({
+  // Başkalarından aldığı oylar (Genel Konsey)
+  const receivedVotes = await prisma.councilVote.findMany({
     where: { targetId: playerId },
     include: {
-      voter: true,
-      match: true
+      voter: true
     },
-    orderBy: { match: { date: 'desc' } }
+    orderBy: { createdAt: 'desc' }
   });
 
-  // Başkalarına verdiği oylar
-  const givenVotes = await prisma.vote.findMany({
+  // Başkalarına verdiği oylar (Genel Konsey)
+  const givenVotes = await prisma.councilVote.findMany({
     where: { voterId: playerId },
     include: {
-      target: true,
-      match: true
+      target: true
     },
-    orderBy: { match: { date: 'desc' } }
+    orderBy: { createdAt: 'desc' }
   });
 
   return (
@@ -78,7 +76,7 @@ export default async function PlayerDetailsPage({ params }: { params: Promise<{ 
                 <div key={vote.id} className="bg-white border border-gray-100 p-4 rounded-xl flex items-center justify-between hover:shadow-md transition-shadow">
                   <div className="flex flex-col gap-1">
                     <span className="text-xs text-gray-400 flex items-center gap-1">
-                      <Clock size={12} /> {vote.match.date.toLocaleDateString('tr-TR')}
+                      <Clock size={12} /> {vote.createdAt.toLocaleDateString('tr-TR')}
                     </span>
                     <span className="text-sm font-bold text-black">
                       Oy Veren: <span className="text-emerald-600">{vote.voter.name}</span>
@@ -111,7 +109,7 @@ export default async function PlayerDetailsPage({ params }: { params: Promise<{ 
                 <div key={vote.id} className="bg-white border border-gray-100 p-4 rounded-xl flex items-center justify-between hover:shadow-md transition-shadow">
                   <div className="flex flex-col gap-1">
                     <span className="text-xs text-gray-400 flex items-center gap-1">
-                      <Clock size={12} /> {vote.match.date.toLocaleDateString('tr-TR')}
+                      <Clock size={12} /> {vote.createdAt.toLocaleDateString('tr-TR')}
                     </span>
                     <span className="text-sm font-bold text-black">
                       Kime: <span className="text-blue-600">{vote.target.name}</span>
