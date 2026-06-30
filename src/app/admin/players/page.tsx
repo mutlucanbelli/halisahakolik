@@ -4,7 +4,8 @@ import PlayerForm from "./PlayerForm";
 import PlayerEditModal from "./PlayerEditModal";
 import CopyCouncilLink from "./CopyCouncilLink";
 import PlayerCode from "./PlayerCode";
-import { Trash2 } from "lucide-react";
+import { Trash2, Eye } from "lucide-react";
+import Link from "next/link";
 
 export default async function PlayersPage() {
   const players = await prisma.player.findMany({
@@ -63,6 +64,9 @@ export default async function PlayersPage() {
             <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-center opacity-100 sm:opacity-50 group-hover:opacity-100 transition-opacity duration-300">
               <CopyCouncilLink playerId={player.id} />
               <div className="flex gap-2 items-center">
+                <Link href={`/admin/players/${player.id}`} className="flex items-center justify-center w-8 h-8 rounded-lg border border-blue-100 text-blue-500 bg-blue-50 hover:bg-blue-500 hover:text-white transition-all shadow-sm" title="Oylama Geçmişi">
+                  <Eye size={14} />
+                </Link>
                 <PlayerEditModal player={player} />
                 <form action={async () => {
                   "use server";
