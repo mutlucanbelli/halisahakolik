@@ -43,7 +43,7 @@ export default async function PlayersPage() {
               
               <div className="flex flex-col items-end z-10">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-black tracking-tighter text-black leading-none">{player.rating.toFixed(0)}</span>
+                  <span className="text-3xl font-black tracking-tighter text-black leading-none">{Math.ceil(player.rating)}</span>
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">OVR</span>
                 </div>
                 <PlayerCode code={player.code} />
@@ -81,7 +81,7 @@ export default async function PlayersPage() {
 
             {/* Background Accent */}
             <div className="absolute -bottom-10 -right-10 text-[120px] font-black text-gray-50 opacity-[0.03] pointer-events-none select-none z-0 transform -rotate-12">
-              {player.rating.toFixed(0)}
+              {Math.ceil(player.rating)}
             </div>
           </div>
         ))}

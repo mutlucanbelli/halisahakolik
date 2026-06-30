@@ -43,8 +43,8 @@ export default async function MatchesPage() {
           const teamA = match.players.filter((mp: any) => mp.team === 'A');
           const teamB = match.players.filter((mp: any) => mp.team === 'B');
           
-          const teamAAvg = teamA.length > 0 ? (teamA.reduce((acc: number, mp: any) => acc + mp.player.rating, 0) / teamA.length).toFixed(1) : "0.0";
-          const teamBAvg = teamB.length > 0 ? (teamB.reduce((acc: number, mp: any) => acc + mp.player.rating, 0) / teamB.length).toFixed(1) : "0.0";
+          const teamAAvg = teamA.length > 0 ? Math.ceil(teamA.reduce((acc: number, mp: any) => acc + mp.player.rating, 0) / teamA.length) : "0";
+          const teamBAvg = teamB.length > 0 ? Math.ceil(teamB.reduce((acc: number, mp: any) => acc + mp.player.rating, 0) / teamB.length) : "0";
           
           const matchTime = match.date.getTime();
           const timePassed = now >= matchTime + (60 * 60 * 1000);
@@ -85,7 +85,7 @@ export default async function MatchesPage() {
                       {teamA.map((mp: any) => (
                         <div key={mp.id} className="flex justify-between items-center text-sm group/player">
                           <span className="font-semibold text-gray-700">{mp.player.name}</span>
-                          <span className="text-xs font-bold text-gray-400 group-hover/player:text-black transition-colors">{mp.player.rating.toFixed(1)}</span>
+                          <span className="text-xs font-bold text-gray-400 group-hover/player:text-black transition-colors">{Math.ceil(mp.player.rating)}</span>
                         </div>
                       ))}
                     </div>
@@ -107,7 +107,7 @@ export default async function MatchesPage() {
                       {teamB.map((mp: any) => (
                         <div key={mp.id} className="flex justify-between items-center text-sm group/player">
                           <span className="font-semibold text-gray-700">{mp.player.name}</span>
-                          <span className="text-xs font-bold text-gray-400 group-hover/player:text-black transition-colors">{mp.player.rating.toFixed(1)}</span>
+                          <span className="text-xs font-bold text-gray-400 group-hover/player:text-black transition-colors">{Math.ceil(mp.player.rating)}</span>
                         </div>
                       ))}
                     </div>

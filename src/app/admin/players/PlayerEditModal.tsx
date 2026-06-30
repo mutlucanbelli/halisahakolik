@@ -59,7 +59,7 @@ export default function PlayerEditModal({ player }: { player: any }) {
   const matchVotes = player.votesReceived || [];
   const totalVotesCount = matchVotes.length;
   const matchOverall = totalVotesCount > 0 
-    ? (matchVotes.reduce((acc: number, v: any) => acc + v.rating, 0) / totalVotesCount).toFixed(1)
+    ? Math.ceil(matchVotes.reduce((acc: number, v: any) => acc + v.rating, 0) / totalVotesCount)
     : "Oylama Yok";
 
   const modalContent = (

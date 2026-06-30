@@ -38,7 +38,7 @@ export default async function CouncilVotePage({ params }: { params: Promise<{ pl
           </span>
           {votes.length > 0 && (
             <span className="bg-green-50 text-green-700 px-2 py-1 rounded-md border border-green-100">
-              Ortalama: {targetPlayer.rating.toFixed(1)}
+              Ortalama: {Math.ceil(targetPlayer.rating)}
             </span>
           )}
         </div>

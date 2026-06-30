@@ -56,8 +56,8 @@ export default function MatchForm({ players }: { players: any[] }) {
   };
 
   if (showPreview) {
-    const avgA = teamA.length > 0 ? (teamA.reduce((sum, p) => sum + p.rating, 0) / teamA.length).toFixed(1) : 0;
-    const avgB = teamB.length > 0 ? (teamB.reduce((sum, p) => sum + p.rating, 0) / teamB.length).toFixed(1) : 0;
+    const avgA = teamA.length > 0 ? Math.ceil(teamA.reduce((sum, p) => sum + p.rating, 0) / teamA.length) : 0;
+    const avgB = teamB.length > 0 ? Math.ceil(teamB.reduce((sum, p) => sum + p.rating, 0) / teamB.length) : 0;
 
     return (
       <form action={async (formData) => {
@@ -92,7 +92,7 @@ export default function MatchForm({ players }: { players: any[] }) {
               <div key={p.id} className="bg-white border rounded-lg p-2 flex justify-between items-center shadow-sm">
                 <div className="flex flex-col">
                   <span className="text-sm font-bold">{p.name}</span>
-                  <span className="text-xs text-slate-400">{p.positions} - Ort: {p.rating.toFixed(1)}</span>
+                  <span className="text-xs text-slate-400">{p.positions} - Ort: {Math.ceil(p.rating)}</span>
                 </div>
                 <button type="button" onClick={() => swapToB(p)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition" title="B Takımına Gönder">
                   <ArrowLeftRight size={16} />
@@ -114,7 +114,7 @@ export default function MatchForm({ players }: { players: any[] }) {
                 </button>
                 <div className="flex flex-col text-right">
                   <span className="text-sm font-bold">{p.name}</span>
-                  <span className="text-xs text-slate-400">Ort: {p.rating.toFixed(1)} - {p.positions}</span>
+                  <span className="text-xs text-slate-400">Ort: {Math.ceil(p.rating)} - {p.positions}</span>
                 </div>
               </div>
             ))}
@@ -187,7 +187,7 @@ export default function MatchForm({ players }: { players: any[] }) {
                 <span className="text-xs text-slate-400">{p.positions}</span>
               </div>
               <span className="text-xs font-bold text-primary bg-white px-2 py-1 rounded shadow-sm border border-slate-100">
-                Ort: {p.rating.toFixed(1)}
+                Ort: {Math.ceil(p.rating)}
               </span>
             </label>
           ))}

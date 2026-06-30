@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { Users, Trophy, Activity, Medal, Calendar, ArrowRight, Star } from "lucide-react";
@@ -89,7 +91,7 @@ export default async function Home() {
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <span className="font-bold text-black text-sm">{player.rating.toFixed(1)}</span>
+                <span className="font-bold text-black text-sm">{Math.ceil(player.rating)}</span>
               </div>
             </div>
           ))}
@@ -114,8 +116,8 @@ export default async function Home() {
             const teamA = match.players.filter((mp: any) => mp.team === 'A');
             const teamB = match.players.filter((mp: any) => mp.team === 'B');
             
-            const teamAAvg = teamA.length > 0 ? (teamA.reduce((acc: number, mp: any) => acc + mp.player.rating, 0) / teamA.length).toFixed(1) : 0;
-            const teamBAvg = teamB.length > 0 ? (teamB.reduce((acc: number, mp: any) => acc + mp.player.rating, 0) / teamB.length).toFixed(1) : 0;
+            const teamAAvg = teamA.length > 0 ? Math.ceil(teamA.reduce((acc: number, mp: any) => acc + mp.player.rating, 0) / teamA.length) : 0;
+            const teamBAvg = teamB.length > 0 ? Math.ceil(teamB.reduce((acc: number, mp: any) => acc + mp.player.rating, 0) / teamB.length) : 0;
 
             return (
               <div key={match.id} className="bg-white border border-gray-100 p-4 rounded-xl hover:shadow-md transition-all duration-300">

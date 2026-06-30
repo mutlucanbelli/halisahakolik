@@ -69,7 +69,7 @@ export async function completeMatch(matchId: string) {
        const avg = scores[tId].total / scores[tId].count;
        if (avg > highestAvg) {
           highestAvg = avg;
-          mvp = { name: scores[tId].name, avg: avg.toFixed(1) };
+          mvp = { name: scores[tId].name, avg: Math.ceil(avg).toString() };
        }
     }
   }

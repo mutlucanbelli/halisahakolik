@@ -50,11 +50,11 @@ export default async function PlayerDetailsPage({ params }: { params: Promise<{ 
           </div>
           <div className="flex flex-col items-center sm:items-end sm:ml-auto z-10 bg-white/50 px-6 py-3 rounded-2xl border border-white/60 shadow-sm">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Mevcut Ort.</span>
-            <span className="text-4xl font-black text-black">{player.rating.toFixed(1)}</span>
+            <span className="text-4xl font-black text-black">{Math.ceil(player.rating)}</span>
           </div>
 
           <div className="absolute -right-10 -bottom-10 text-[150px] font-black text-gray-900 opacity-[0.02] pointer-events-none rotate-12">
-            {player.rating.toFixed(0)}
+            {Math.ceil(player.rating)}
           </div>
         </div>
       </div>
