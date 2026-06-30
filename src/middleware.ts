@@ -4,14 +4,10 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Halka açık (şifresiz girilebilecek) yolları belirle
-  const isPublicPath = pathname.startsWith('/login') || 
-                       pathname.startsWith('/vote') || 
-                       pathname.startsWith('/_next') || 
-                       request.headers.get("next-action") !== null || // Server Actions (form gönderimleri) için istisna
-                       pathname.includes('.'); // statik dosyalar (favicon vb)
+  // Sadece ana sayfa (/) ve /admin sayfalarını koru
+  const isProtectedPath = pathname === '/' || pathname.startsWith('/admin');
 
-  if (!isPublicPath) {
+  if (isProtectedPath) {
     const sessionCookie = request.cookies.get('admin_session');
     
     // Çerez yoksa veya hatalıysa login sayfasına at
@@ -20,9 +16,11 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // Diğer tüm sayfalara (özellikle /vote) izin ver
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  // Sadece / ve /admin yollarında middleware çalışsın (performans optimizasyonu)
+  matcher: ['/', '/admin/:path*'],
 };
