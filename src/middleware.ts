@@ -8,6 +8,7 @@ export function middleware(request: NextRequest) {
   const isPublicPath = pathname.startsWith('/login') || 
                        pathname.startsWith('/vote') || 
                        pathname.startsWith('/_next') || 
+                       request.headers.get("next-action") !== null || // Server Actions (form gönderimleri) için istisna
                        pathname.includes('.'); // statik dosyalar (favicon vb)
 
   if (!isPublicPath) {
