@@ -20,9 +20,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr" className={`${outfit.variable}`}>
-      <body>
-        {children}
-        <BottomNav />
+      <body className="flex justify-center min-h-screen bg-slate-900 overflow-y-scroll" style={{ margin: 0 }}>
+        <main className="w-full max-w-[430px] bg-slate-50 min-h-screen relative shadow-2xl pb-24 overflow-x-hidden flex flex-col">
+          {children}
+          <BottomNav />
+        </main>
       </body>
     </html>
   );

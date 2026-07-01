@@ -15,13 +15,7 @@ export default async function ReportsPage() {
     }
   });
 
-  const players = await prisma.player.findMany({
-    include: {
-      matches: true
-    }
-  });
-
   return (
-    <ReportsClient matches={matches} players={players} />
+    <ReportsClient matches={matches} />
   );
 }

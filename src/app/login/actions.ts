@@ -5,11 +5,8 @@ import { redirect } from "next/navigation";
 
 export async function loginAdmin(formData: FormData) {
   const password = formData.get("password") as string;
-  const adminPassword = process.env.ADMIN_PASSWORD;
-
-  if (!adminPassword) {
-    return { error: "Sistemde ADMIN_PASSWORD ayarlanmamış. Lütfen çevre değişkenlerini kontrol edin." };
-  }
+  // Vercel üzerinden ADMIN_PASSWORD environment variable'ını okur. Ayarlanmamışsa 123456 kabul eder.
+  const adminPassword = process.env.ADMIN_PASSWORD || "123456";
 
   if (password === adminPassword) {
     const cookieStore = await cookies();
@@ -22,7 +19,7 @@ export async function loginAdmin(formData: FormData) {
     });
     
     // Giriş başarılıysa maçlar sayfasına yönlendir.
-    redirect("/admin/matches");
+    redirect("/admin");
   } else {
     return { error: "Şifre yanlış. Lütfen tekrar deneyin." };
   }

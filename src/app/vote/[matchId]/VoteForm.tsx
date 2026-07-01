@@ -2,10 +2,15 @@
 
 import { useState } from "react";
 import { submitVote } from "./actions";
+import PitchView from "@/components/PitchView";
 
-export default function VoteForm({ matchId, players }: { matchId: string, players: any[] }) {
+export default function VoteForm({ matchId, matchPlayers }: { matchId: string, matchPlayers: any[] }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  const teamA = matchPlayers.filter((mp: any) => mp.team === 'A').map((mp: any) => mp.player);
+  const teamB = matchPlayers.filter((mp: any) => mp.team === 'B').map((mp: any) => mp.player);
+  const players = matchPlayers.map((mp: any) => mp.player).sort((a: any, b: any) => a.name.localeCompare(b.name));
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -31,8 +36,7 @@ export default function VoteForm({ matchId, players }: { matchId: string, player
   }
 
   return (
-    <form onSubmit={handleSubmit} className="glass-panel">
-      <h2 className="title-sub mb-4 text-center">Oy Kullan</h2>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       
       {error && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -55,25 +59,27 @@ export default function VoteForm({ matchId, players }: { matchId: string, player
         </div>
       )}
 
-      <div className="mb-6">
-        <label className="block text-sm font-bold mb-2 text-slate-700">Kişisel Kodunuz:</label>
-        <input type="text" name="voterCode" className="input-field border-slate-200" placeholder="Adminin size verdiği 5 haneli kod" required />
+      <div className="glass-panel p-5">
+        <label className="block text-xs font-bold mb-2 text-slate-700 uppercase tracking-wide">Kişisel Kodunuz:</label>
+        <input type="text" name="voterCode" className="input-field border-slate-200 bg-slate-50 mb-0 font-bold tracking-widest text-center" placeholder="5 haneli kod" required />
         <input type="hidden" name="matchId" value={matchId} />
       </div>
 
-      <div className="flex flex-col gap-4">
-        <div className="bg-blue-50 text-blue-800 p-3 rounded-lg text-sm mb-2">
-          Lütfen diğer oyuncuların bu maçtaki <strong>Genel Performansını</strong> (1-100 arası) değerlendirin.
-        </div>
-        
+      <div className="flex flex-col gap-2">
+        <h3 className="text-sm font-bold text-slate-700 ml-1">Kadro Görünümü</h3>
+        <PitchView teamA={teamA} teamB={teamB} />
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <h3 className="text-sm font-bold text-slate-700 ml-1 mt-4">Oyuncuları Değerlendir (1-100)</h3>
         {players.map((p) => {
-          // React state must be used to show the slider value dynamically, 
-          // but since this is a map inside a standard component, we can use an internal component or just a simple client component approach.
           return <PlayerRatingRow key={p.id} player={p} />;
         })}
       </div>
 
-      <button type="submit" className="btn-primary mt-6 w-full py-3 text-lg shadow-md hover:shadow-lg">Oyları Gönder</button>
+      <button type="submit" className="w-full bg-black text-white font-bold py-4 rounded-xl shadow-lg active:scale-[0.98]">
+        Oyları Gönder
+      </button>
     </form>
   );
 }

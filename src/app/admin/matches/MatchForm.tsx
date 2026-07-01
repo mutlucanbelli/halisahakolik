@@ -2,37 +2,76 @@
 
 import { useState } from "react";
 import { createMatch } from "./actions";
-import { ArrowLeftRight, Users } from "lucide-react";
+import { ArrowLeftRight, Users, Calendar, Clock, Shirt } from "lucide-react";
+import PitchView from "@/components/PitchView";
 
 export default function MatchForm({ players }: { players: any[] }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [dateStr, setDateStr] = useState("");
+  // Hangi oyuncunun hangi mevkide oynayacağı bilgisi:
+  const [selectedPositions, setSelectedPositions] = useState<Record<string, string>>({});
+  
+  // Varsayılan tarihi bugün olarak ayarla (YYYY-MM-DD)
+  const today = new Date().toISOString().split('T')[0];
+  const [dateStr, setDateStr] = useState(today);
+  
+  const [hourStr, setHourStr] = useState("20:00");
   const [teamA, setTeamA] = useState<any[]>([]);
   const [teamB, setTeamB] = useState<any[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const togglePlayer = (id: string) => {
+  const togglePlayer = (id: string, defaultPos: string) => {
     if (selectedIds.includes(id)) {
       setSelectedIds(selectedIds.filter(pid => pid !== id));
+      const newPos = { ...selectedPositions };
+      delete newPos[id];
+      setSelectedPositions(newPos);
     } else {
       setSelectedIds([...selectedIds, id]);
+      setSelectedPositions({ ...selectedPositions, [id]: defaultPos });
     }
   };
 
-  const generateDraft = () => {
-    if (!dateStr || selectedIds.length === 0) return;
+  const updatePosition = (id: string, pos: string) => {
+    setSelectedPositions({ ...selectedPositions, [id]: pos });
+  };
 
-    // Seçili oyuncuları bul ve puana göre (büyükten küçüğe) sırala
+  const generateDraft = () => {
+    if (!dateStr || !hourStr || selectedIds.length === 0) return;
+
+    // Seçili oyuncuları al ve seçtikleri mevkileri 'positions' alanına yaz (PitchView için)
     const selectedPlayers = players
       .filter(p => selectedIds.includes(p.id))
-      .sort((a, b) => b.rating - a.rating);
+      .map(p => ({ ...p, positions: selectedPositions[p.id] || p.positions.split(',')[0].trim() }));
+
+    // Mevkilere göre grupla
+    const gk: any[] = [];
+    const def: any[] = [];
+    const mid: any[] = [];
+    const att: any[] = [];
+
+    selectedPlayers.forEach(p => {
+      const pos = p.positions.toLowerCase();
+      if (pos.includes("kaleci") || pos.includes("gk")) gk.push(p);
+      else if (pos.includes("defans") || pos.includes("stoper") || pos.includes("bek")) def.push(p);
+      else if (pos.includes("forvet") || pos.includes("santrfor")) att.push(p);
+      else mid.push(p); // Orta saha ve diğerleri
+    });
+
+    // Her grubu kendi içinde güce göre sırala
+    gk.sort((a, b) => b.rating - a.rating);
+    def.sort((a, b) => b.rating - a.rating);
+    mid.sort((a, b) => b.rating - a.rating);
+    att.sort((a, b) => b.rating - a.rating);
 
     const a: any[] = [];
     const b: any[] = [];
 
-    // Snake Draft: A, B, B, A, A, B...
-    selectedPlayers.forEach((p, index) => {
+    // Tüm oyuncuları mevki sırasına göre tek bir listeye diziyoruz
+    const allOrdered = [...gk, ...def, ...mid, ...att];
+
+    // Tek bir snake-draft (A, B, B, A) ile dağıtıyoruz. Bu sayede takım sayıları ASLA 1'den fazla fark edemez.
+    allOrdered.forEach((p, index) => {
       if (index % 4 === 0 || index % 4 === 3) {
         a.push(p);
       } else {
@@ -56,19 +95,18 @@ export default function MatchForm({ players }: { players: any[] }) {
   };
 
   if (showPreview) {
+    const finalDateTime = `${dateStr}T${hourStr}`;
     const avgA = teamA.length > 0 ? Math.ceil(teamA.reduce((sum, p) => sum + p.rating, 0) / teamA.length) : 0;
     const avgB = teamB.length > 0 ? Math.ceil(teamB.reduce((sum, p) => sum + p.rating, 0) / teamB.length) : 0;
 
     return (
       <form action={async (formData) => {
         setLoading(true);
-        // add teams to formData manually since they are state
         teamA.forEach(p => formData.append("teamA", p.id));
         teamB.forEach(p => formData.append("teamB", p.id));
-        formData.append("date", dateStr);
+        formData.append("date", finalDateTime);
         await createMatch(formData);
         
-        // Reset after submission
         setShowPreview(false);
         setSelectedIds([]);
         setDateStr("");
@@ -78,43 +116,49 @@ export default function MatchForm({ players }: { players: any[] }) {
       }} className="flex flex-col gap-4">
         
         <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-lg text-sm">
-          Aşağıdaki kadrolar sistem tarafından otomatik dengelenmiştir. Dilerseniz <strong>⇄</strong> tuşuna basarak oyuncuları diğer takıma kaydırabilirsiniz.
+          Kadro, oyuncuların <strong>güçlerine ve seçilen mevkilerine göre</strong> dengeli şekilde dağıtıldı. İsterseniz aşağıdaki listeden manuel değişiklik yapabilirsiniz.
         </div>
 
-        <div className="flex gap-2">
+        {/* Pitch View */}
+        <div className="w-full">
+          <PitchView teamA={teamA} teamB={teamB} />
+        </div>
+
+        {/* Swap List */}
+        <div className="flex gap-2 mt-4 w-full">
           {/* Takım A Sütunu */}
-          <div className="flex-1 flex flex-col gap-2" style={{ background: "rgba(59, 130, 246, 0.05)", padding: "0.75rem", borderRadius: "12px", border: "1px solid rgba(59, 130, 246, 0.2)" }}>
-            <div className="text-center mb-2">
-              <strong style={{ color: "#3b82f6" }}>Takım A</strong>
-              <div className="text-xs text-slate-500">Ortalama: {avgA}</div>
+          <div className="flex-1 flex flex-col gap-2">
+            <div className="text-center mb-1 text-xs">
+              <strong className="text-blue-600">Takım A (Mavi)</strong>
+              <div className="text-slate-500">OVR: {avgA}</div>
             </div>
             {teamA.map(p => (
               <div key={p.id} className="bg-white border rounded-lg p-2 flex justify-between items-center shadow-sm">
                 <div className="flex flex-col">
-                  <span className="text-sm font-bold">{p.name}</span>
-                  <span className="text-xs text-slate-400">{p.positions} - Ort: {Math.ceil(p.rating)}</span>
+                  <span className="text-xs font-bold">{p.name}</span>
+                  <span className="text-[9px] text-slate-400 uppercase">{p.positions}</span>
                 </div>
-                <button type="button" onClick={() => swapToB(p)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition" title="B Takımına Gönder">
-                  <ArrowLeftRight size={16} />
+                <button type="button" onClick={() => swapToB(p)} className="p-1 text-blue-500 hover:bg-blue-50 rounded-full transition" title="B Takımına Gönder">
+                  <ArrowLeftRight size={14} />
                 </button>
               </div>
             ))}
           </div>
 
           {/* Takım B Sütunu */}
-          <div className="flex-1 flex flex-col gap-2" style={{ background: "rgba(239, 68, 68, 0.05)", padding: "0.75rem", borderRadius: "12px", border: "1px solid rgba(239, 68, 68, 0.2)" }}>
-            <div className="text-center mb-2">
-              <strong style={{ color: "#ef4444" }}>Takım B</strong>
-              <div className="text-xs text-slate-500">Ortalama: {avgB}</div>
+          <div className="flex-1 flex flex-col gap-2">
+            <div className="text-center mb-1 text-xs">
+              <strong className="text-red-500">Takım B (Kırmızı)</strong>
+              <div className="text-slate-500">OVR: {avgB}</div>
             </div>
             {teamB.map(p => (
               <div key={p.id} className="bg-white border rounded-lg p-2 flex justify-between items-center shadow-sm">
-                <button type="button" onClick={() => swapToA(p)} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition" title="A Takımına Gönder">
-                  <ArrowLeftRight size={16} />
+                <button type="button" onClick={() => swapToA(p)} className="p-1 text-red-500 hover:bg-red-50 rounded-full transition" title="A Takımına Gönder">
+                  <ArrowLeftRight size={14} />
                 </button>
                 <div className="flex flex-col text-right">
-                  <span className="text-sm font-bold">{p.name}</span>
-                  <span className="text-xs text-slate-400">Ort: {Math.ceil(p.rating)} - {p.positions}</span>
+                  <span className="text-xs font-bold">{p.name}</span>
+                  <span className="text-[9px] text-slate-400 uppercase">{p.positions}</span>
                 </div>
               </div>
             ))}
@@ -122,28 +166,45 @@ export default function MatchForm({ players }: { players: any[] }) {
         </div>
 
         <div className="flex gap-2 mt-2">
-          <button type="button" onClick={() => setShowPreview(false)} className="bg-slate-200 text-slate-700 font-bold px-4 py-3 rounded-full hover:bg-slate-300 transition-all shadow-sm" style={{ flex: 0.5 }}>
-            İptal
+          <button type="button" onClick={() => setShowPreview(false)} className="bg-slate-200 text-slate-700 font-bold px-4 py-4 rounded-xl hover:bg-slate-300 transition-all shadow-sm" style={{ flex: 0.5 }}>
+            Geri Dön
           </button>
-          <button type="submit" className="btn-primary" style={{ flex: 1 }} disabled={loading}>
-            {loading ? "Kaydediliyor..." : "Maçı Kaydet"}
+          <button type="submit" className="flex-1 bg-black text-white font-bold py-4 rounded-xl shadow-lg active:scale-[0.98]" disabled={loading}>
+            {loading ? "Kaydediliyor..." : "Maçı Kesinleştir"}
           </button>
         </div>
       </form>
     );
   }
 
+  const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <label className="text-sm font-bold block mb-1 text-slate-700">Maç Tarihi ve Saati</label>
-        <input 
-          type="datetime-local" 
-          value={dateStr}
-          onChange={(e) => setDateStr(e.target.value)}
-          className="input-field mb-0" 
-          required 
-        />
+      <div className="flex gap-4">
+        <div className="flex-1">
+          <label className="text-xs font-bold block mb-1 text-slate-700 flex items-center gap-1"><Calendar size={14} /> Maç Tarihi</label>
+          <input 
+            type="date" 
+            value={dateStr}
+            onChange={(e) => setDateStr(e.target.value)}
+            className="input-field mb-0 w-full" 
+            required 
+          />
+        </div>
+        <div className="flex-1">
+          <label className="text-xs font-bold block mb-1 text-slate-700 flex items-center gap-1"><Clock size={14} /> Maç Saati (Tam)</label>
+          <select 
+            value={hourStr}
+            onChange={(e) => setHourStr(e.target.value)}
+            className="input-field mb-0 w-full bg-white" 
+            required
+          >
+            {hours.map(h => (
+              <option key={h} value={h}>{h}</option>
+            ))}
+          </select>
+        </div>
       </div>
       
       <div>
@@ -153,7 +214,10 @@ export default function MatchForm({ players }: { players: any[] }) {
             {selectedIds.length === players.length && players.length > 0 ? (
               <button 
                 type="button" 
-                onClick={() => setSelectedIds([])} 
+                onClick={() => {
+                  setSelectedIds([]);
+                  setSelectedPositions({});
+                }} 
                 className="text-xs text-red-500 hover:text-red-700 font-semibold"
               >
                 Temizle
@@ -161,7 +225,12 @@ export default function MatchForm({ players }: { players: any[] }) {
             ) : (
               <button 
                 type="button" 
-                onClick={() => setSelectedIds(players.map(p => p.id))} 
+                onClick={() => {
+                  setSelectedIds(players.map(p => p.id));
+                  const newPos: Record<string, string> = {};
+                  players.forEach(p => newPos[p.id] = p.positions.split(',')[0].trim());
+                  setSelectedPositions(newPos);
+                }} 
                 className="text-xs text-blue-600 hover:text-blue-800 font-semibold"
               >
                 Tümünü Seç
@@ -171,26 +240,50 @@ export default function MatchForm({ players }: { players: any[] }) {
           </div>
         </div>
         
-        <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-2" style={{ scrollbarWidth: "thin" }}>
-          {players.map((p: any) => (
-            <label key={p.id} className={`flex items-center gap-3 p-3 rounded-xl border transition-colors cursor-pointer ${
-              selectedIds.includes(p.id) ? 'bg-green-50 border-green-200' : 'bg-white border-slate-100 hover:bg-slate-50'
-            }`}>
-              <input 
-                type="checkbox" 
-                checked={selectedIds.includes(p.id)}
-                onChange={() => togglePlayer(p.id)}
-                style={{ width: "1.2rem", height: "1.2rem", accentColor: "var(--primary)" }} 
-              />
-              <div className="flex-1 flex flex-col">
-                <span className={`font-bold text-sm ${selectedIds.includes(p.id) ? 'text-green-800' : 'text-slate-700'}`}>{p.name}</span>
-                <span className="text-xs text-slate-400">{p.positions}</span>
+        <div className="flex flex-col gap-2 max-h-[350px] overflow-y-auto pr-2" style={{ scrollbarWidth: "thin" }}>
+          {players.map((p: any) => {
+            const isSelected = selectedIds.includes(p.id);
+            const availablePositions = p.positions.split(',').map((pos: string) => pos.trim());
+            const defaultPos = availablePositions[0];
+
+            return (
+              <div key={p.id} className={`flex flex-col gap-2 p-3 rounded-xl border transition-colors ${
+                isSelected ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-100 hover:bg-slate-50'
+              }`}>
+                <div className="flex items-center gap-3">
+                  <input 
+                    type="checkbox" 
+                    checked={isSelected}
+                    onChange={() => togglePlayer(p.id, defaultPos)}
+                    className="w-5 h-5 accent-emerald-500 cursor-pointer" 
+                  />
+                  <div className="flex-1 flex flex-col cursor-pointer" onClick={() => togglePlayer(p.id, defaultPos)}>
+                    <span className={`font-bold text-sm ${isSelected ? 'text-emerald-800' : 'text-slate-700'}`}>{p.name}</span>
+                    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{p.positions}</span>
+                  </div>
+                  <span className="text-xs font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded shadow-sm border border-slate-200">
+                    OVR {Math.ceil(p.rating)}
+                  </span>
+                </div>
+                
+                {/* Mevki Seçimi (Yalnızca Seçiliyse) */}
+                {isSelected && (
+                  <div className="ml-8 flex items-center gap-2 mt-1 animate-fade-in">
+                    <Shirt size={14} className="text-emerald-600" />
+                    <select 
+                      value={selectedPositions[p.id] || defaultPos}
+                      onChange={(e) => updatePosition(p.id, e.target.value)}
+                      className="text-xs font-bold bg-white border border-emerald-200 text-emerald-800 rounded px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      {availablePositions.map((pos: string) => (
+                        <option key={pos} value={pos}>{pos}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
-              <span className="text-xs font-bold text-primary bg-white px-2 py-1 rounded shadow-sm border border-slate-100">
-                Ort: {Math.ceil(p.rating)}
-              </span>
-            </label>
-          ))}
+            );
+          })}
           {players.length === 0 && <span className="text-sm text-slate-400 text-center py-4">Önce sisteme oyuncu eklemelisiniz.</span>}
         </div>
       </div>
@@ -198,14 +291,11 @@ export default function MatchForm({ players }: { players: any[] }) {
       <button 
         type="button" 
         onClick={generateDraft} 
-        className="btn-primary mt-2 flex items-center justify-center gap-2"
-        disabled={selectedIds.length < 2 || !dateStr}
+        className="w-full bg-black text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 mt-2 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 disabled:cursor-not-allowed"
+        disabled={selectedIds.length < 2 || !dateStr || !hourStr}
       >
-        <Users size={18} /> Kadroları Dağıt (Önizleme)
+        <Users size={18} /> Kadroları Dağıt ve Önizle
       </button>
-      {selectedIds.length < 2 && (
-        <p className="text-xs text-center text-slate-400">Takım kurabilmek için en az 2 kişi seçmelisiniz.</p>
-      )}
     </div>
   );
 }

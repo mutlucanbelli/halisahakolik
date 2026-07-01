@@ -185,9 +185,9 @@ export default function PlayerEditModal({ player }: { player: any }) {
     <>
       <button 
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all font-semibold shadow-sm active:scale-95"
+        className="flex items-center justify-center gap-2 h-[46px] px-5 rounded-xl border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-500 hover:text-white transition-all shadow-sm font-bold w-full"
       >
-        <Edit2 size={14} /> Düzenle
+        <Edit2 size={16} /> Düzenle
       </button>
 
       {mounted && isOpen && createPortal(modalContent, document.body)}

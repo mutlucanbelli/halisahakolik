@@ -17,12 +17,12 @@ export default function CopyCouncilLink({ playerId }: { playerId: string }) {
   return (
     <button 
       onClick={handleCopy}
-      className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-colors ${
-        copied ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100'
+      className={`flex-1 flex items-center justify-center gap-1.5 text-[11px] font-bold px-2 py-1.5 rounded-lg transition-all ${
+        copied ? 'bg-emerald-50 text-emerald-600' : 'bg-transparent text-slate-600 hover:bg-slate-200/50 hover:text-slate-800'
       }`}
     >
       {copied ? <Check size={14} /> : <Link size={14} />}
-      {copied ? "Kopyalandı" : "Konsey Linki"}
+      {copied ? "Kopyalandı" : "Oylama Linki"}
     </button>
   );
 }

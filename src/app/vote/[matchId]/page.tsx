@@ -41,18 +41,16 @@ export default async function VotePage({ params }: { params: Promise<{ matchId: 
     );
   }
 
-  const players = match.players.map((mp: any) => mp.player);
-
   return (
-    <div className="container py-8">
-      <div className="mb-6 text-center">
+    <div className="container py-8 flex-col flex gap-4 h-full">
+      <div className="text-center">
         <h1 className="title-main text-2xl mb-1">Maç Sonu Oylaması</h1>
-        <p className="text-sm" style={{ color: "#94a3b8" }}>
+        <p className="text-sm font-medium text-slate-500">
           {match.date.toLocaleDateString('tr-TR')} Tarihli Maç
         </p>
       </div>
 
-      <VoteForm matchId={match.id} players={players} />
+      <VoteForm matchId={match.id} matchPlayers={match.players} />
     </div>
   );
 }
