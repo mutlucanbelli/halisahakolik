@@ -8,8 +8,8 @@ import { logoutAdmin } from "@/app/login/actions";
 export default function BottomNav() {
   const pathname = usePathname();
 
-  // Oylama ve login sayfalarında alt menüyü gizle
-  if (pathname?.startsWith("/vote") || pathname?.startsWith("/login")) {
+  // Oylama, login ve oyuncu sayfalarında alt menüyü gizle
+  if (pathname?.startsWith("/vote") || pathname?.startsWith("/login") || pathname?.startsWith("/player")) {
     return null;
   }
 

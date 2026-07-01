@@ -30,3 +30,41 @@ export async function logoutAdmin() {
   cookieStore.delete("admin_session");
   redirect("/login");
 }
+
+export async function loginPlayer(formData: FormData) {
+  const code = formData.get("code") as string;
+  
+  if (!code || code.trim() === "") {
+    return { error: "Lütfen oyuncu kodunuzu girin." };
+  }
+
+  // Next.js Server Action içinde doğrudan prisma import edilemeyebilir veya top level'da olmalı. 
+  // action dosyasının en başına import prisma from "@/lib/prisma" eklememiz lazım.
+  // Wait, let's import it inline to avoid breaking things if it's not imported at top.
+  const { PrismaClient } = await import('@prisma/client');
+  const prisma = new PrismaClient();
+  
+  const player = await prisma.player.findUnique({
+    where: { code: code.trim() }
+  });
+
+  if (player) {
+    const cookieStore = await cookies();
+    cookieStore.set("player_session", player.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 7, // 1 hafta
+      path: "/",
+    });
+    
+    redirect("/player");
+  } else {
+    return { error: "Geçersiz oyuncu kodu. Lütfen tekrar deneyin." };
+  }
+}
+
+export async function logoutPlayer() {
+  const cookieStore = await cookies();
+  cookieStore.delete("player_session");
+  redirect("/login");
+}
