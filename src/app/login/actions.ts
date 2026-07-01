@@ -44,8 +44,16 @@ export async function loginPlayer(formData: FormData) {
   const { PrismaClient } = await import('@prisma/client');
   const prisma = new PrismaClient();
   
+  // Türkçe ı, i ve İ harflerini İngilizce I'ya çevir (Klavye hatalarını önlemek için)
+  const normalizedCode = code
+    .trim()
+    .replace(/i/g, 'I')
+    .replace(/ı/g, 'I')
+    .replace(/İ/g, 'I')
+    .toUpperCase();
+  
   const player = await prisma.player.findUnique({
-    where: { code: code.trim() }
+    where: { code: normalizedCode }
   });
 
   if (player) {
