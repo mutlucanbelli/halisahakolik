@@ -82,8 +82,7 @@ export default function MatchForm({ players }: { players: any[] }) {
     // --- YAPAY ZEKA DESTEKLİ MATEMATİKSEL KOMBİNASYON ALGORİTMASI ---
     const half = Math.ceil(N / 2);
     let bestScore = Infinity;
-    let bestTeamA: any[] = [];
-    let bestTeamB: any[] = [];
+    let eliteCombinations: { teamA: number[], score: number }[] = [];
 
     const totalSum = selectedPlayers.reduce((s, p) => s + getPosRating(p), 0);
 
@@ -131,13 +130,12 @@ export default function MatchForm({ players }: { players: any[] }) {
 
       if (score < bestScore) {
         bestScore = score;
-        bestTeamA = teamAIndices.map(idx => selectedPlayers[idx]);
-        
-        const tempB = [];
-        for (let i = 0; i < N; i++) {
-          if (!teamAIndices.includes(i)) tempB.push(selectedPlayers[i]);
-        }
-        bestTeamB = tempB;
+        // Yeni bir en iyi skor bulduğumuzda, havuzu temizle (en iyi skora çok yakın olanları tut)
+        eliteCombinations = eliteCombinations.filter(c => c.score <= bestScore + 3);
+        eliteCombinations.push({ teamA: [...teamAIndices], score });
+      } else if (score <= bestScore + 3) {
+        // En iyi skora maksimum 3 puan uzaklıktaysa (yani neredeyse eşitse) bu ihtimali de listeye al
+        eliteCombinations.push({ teamA: [...teamAIndices], score });
       }
     };
 
@@ -157,12 +155,23 @@ export default function MatchForm({ players }: { players: any[] }) {
 
     getCombinations(0, []);
 
-    // Takımları kendi içinde en yüksek reytingden düşüğe sırala ki ekranda güzel görünsün
-    bestTeamA.sort((a, b) => getPosRating(b) - getPosRating(a));
-    bestTeamB.sort((a, b) => getPosRating(b) - getPosRating(a));
+    // Elit (neredeyse kusursuz) kombinasyonlar havuzundan RASTGELE birini seç
+    // Bu sayede aynı oyuncular seçilse bile her seferinde farklı bir adil dağılım çıkar
+    const randomIndex = Math.floor(Math.random() * eliteCombinations.length);
+    const chosenCombo = eliteCombinations[randomIndex].teamA;
 
-    setTeamA(bestTeamA);
-    setTeamB(bestTeamB);
+    const finalTeamA = chosenCombo.map(idx => selectedPlayers[idx]);
+    const finalTeamB = [];
+    for (let i = 0; i < N; i++) {
+      if (!chosenCombo.includes(i)) finalTeamB.push(selectedPlayers[i]);
+    }
+
+    // Takımları kendi içinde en yüksek reytingden düşüğe sırala ki ekranda güzel görünsün
+    finalTeamA.sort((a, b) => getPosRating(b) - getPosRating(a));
+    finalTeamB.sort((a, b) => getPosRating(b) - getPosRating(a));
+
+    setTeamA(finalTeamA);
+    setTeamB(finalTeamB);
     setShowPreview(true);
   };
 
