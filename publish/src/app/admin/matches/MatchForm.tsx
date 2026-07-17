@@ -39,56 +39,130 @@ export default function MatchForm({ players }: { players: any[] }) {
   const generateDraft = () => {
     if (!dateStr || !hourStr || selectedIds.length === 0) return;
 
-    // Seçili oyuncuları al ve seçtikleri mevkileri 'positions' alanına yaz (PitchView için)
     const selectedPlayers = players
       .filter(p => selectedIds.includes(p.id))
       .map(p => ({ ...p, positions: selectedPositions[p.id] || p.positions.split(',')[0].trim() }));
 
-    // Mevkilere göre grupla
-    const gk: any[] = [];
-    const def: any[] = [];
-    const mid: any[] = [];
-    const att: any[] = [];
-
-    selectedPlayers.forEach(p => {
-      const pos = p.positions.toLowerCase();
-      if (pos.includes("kaleci") || pos.includes("gk")) gk.push(p);
-      else if (pos.includes("defans") || pos.includes("stoper") || pos.includes("bek")) def.push(p);
-      else if (pos.includes("forvet") || pos.includes("santrfor")) att.push(p);
-      else mid.push(p); // Orta saha ve diğerleri
-    });
-
-    // Her grubu o mevkinin gücüne göre sırala
     const getPosRating = (p: any) => {
-      const pos = p.positions.toLowerCase();
+      const pos = (p.positions || "").toLowerCase();
       if (pos.includes("kaleci") || pos.includes("gk")) return p.rating_GK;
       if (pos.includes("defans") || pos.includes("stoper") || pos.includes("bek")) return p.rating_DEF;
       if (pos.includes("forvet") || pos.includes("santrfor") || pos.includes("kanat")) return p.rating_FWD;
       return p.rating_MID;
     };
 
-    gk.sort((a, b) => getPosRating(b) - getPosRating(a));
-    def.sort((a, b) => getPosRating(b) - getPosRating(a));
-    mid.sort((a, b) => getPosRating(b) - getPosRating(a));
-    att.sort((a, b) => getPosRating(b) - getPosRating(a));
+    const getPosCategory = (pos: string) => {
+      const p = (pos || "").toLowerCase();
+      if (p.includes("kaleci") || p.includes("gk")) return "GK";
+      if (p.includes("defans") || p.includes("stoper") || p.includes("bek")) return "DEF";
+      if (p.includes("forvet") || p.includes("santrfor") || p.includes("kanat")) return "FWD";
+      return "MID";
+    };
 
-    const a: any[] = [];
-    const b: any[] = [];
+    const N = selectedPlayers.length;
+    
+    // 22 kişiden fazlaysa (çok nadir) tarayıcıyı dondurmamak için hızlı greedy algoritması
+    if (N > 22) {
+      const sorted = [...selectedPlayers].sort((a, b) => getPosRating(b) - getPosRating(a));
+      const a: any[] = [];
+      const b: any[] = [];
+      let sumA = 0; let sumB = 0;
+      sorted.forEach(p => {
+        if (a.length >= Math.ceil(N/2)) { b.push(p); sumB += getPosRating(p); }
+        else if (b.length >= Math.ceil(N/2)) { a.push(p); sumA += getPosRating(p); }
+        else if (sumA <= sumB) { a.push(p); sumA += getPosRating(p); }
+        else { b.push(p); sumB += getPosRating(p); }
+      });
+      setTeamA(a);
+      setTeamB(b);
+      setShowPreview(true);
+      return;
+    }
 
-    // Tüm oyuncuları mevki sırasına göre tek bir listeye diziyoruz
-    const allOrdered = [...gk, ...def, ...mid, ...att];
+    // --- YAPAY ZEKA DESTEKLİ MATEMATİKSEL KOMBİNASYON ALGORİTMASI ---
+    const half = Math.ceil(N / 2);
+    let bestScore = Infinity;
+    let bestTeamA: any[] = [];
+    let bestTeamB: any[] = [];
 
-    // Tek bir snake-draft (A, B, B, A) ile dağıtıyoruz. Bu sayede takım sayıları ASLA 1'den fazla fark edemez.
-    allOrdered.forEach((p, index) => {
-      if (index % 4 === 0 || index % 4 === 3) {
-        a.push(p);
-      } else {
-        b.push(p);
+    const totalSum = selectedPlayers.reduce((s, p) => s + getPosRating(p), 0);
+
+    const playersWithData = selectedPlayers.map(p => ({
+      ...p,
+      _rating: getPosRating(p),
+      _cat: getPosCategory(p.positions)
+    }));
+
+    let gk_tot = 0, def_tot = 0, mid_tot = 0, fwd_tot = 0;
+    for (let i=0; i<N; i++) {
+      const c = playersWithData[i]._cat;
+      if (c === "GK") gk_tot++;
+      else if (c === "DEF") def_tot++;
+      else if (c === "MID") mid_tot++;
+      else fwd_tot++;
+    }
+
+    const evaluate = (teamAIndices: number[]) => {
+      let sumA = 0;
+      let gk_a = 0, def_a = 0, mid_a = 0, fwd_a = 0;
+      
+      for (let i = 0; i < teamAIndices.length; i++) {
+        const p = playersWithData[teamAIndices[i]];
+        sumA += p._rating;
+        if (p._cat === "GK") gk_a++;
+        else if (p._cat === "DEF") def_a++;
+        else if (p._cat === "MID") mid_a++;
+        else fwd_a++;
       }
-    });
 
-    setTeamA(a);
-    setTeamB(b);
+      const sumB = totalSum - sumA;
+      const ratingDiff = Math.abs(sumA - sumB);
+
+      const gk_b = gk_tot - gk_a;
+      const def_b = def_tot - def_a;
+      const mid_b = mid_tot - mid_a;
+      const fwd_b = fwd_tot - fwd_a;
+
+      const posDiff = Math.abs(gk_a - gk_b) + Math.abs(def_a - def_b) + Math.abs(mid_a - mid_b) + Math.abs(fwd_a - fwd_b);
+
+      // Öncelik OVERALL (ratingDiff). Ancak mevki sapmaları da dikkate alınıyor (posDiff * 3)
+      // 3 puanlık overall fark feda edilerek 1 mevki hatası düzeltilebilir.
+      const score = ratingDiff + (posDiff * 3);
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestTeamA = teamAIndices.map(idx => selectedPlayers[idx]);
+        
+        const tempB = [];
+        for (let i = 0; i < N; i++) {
+          if (!teamAIndices.includes(i)) tempB.push(selectedPlayers[i]);
+        }
+        bestTeamB = tempB;
+      }
+    };
+
+    const getCombinations = (start: number, currentCombo: number[]) => {
+      if (currentCombo.length === half) {
+        evaluate(currentCombo);
+        return;
+      }
+      if (currentCombo.length + (N - start) < half) return;
+
+      for (let i = start; i < N; i++) {
+        currentCombo.push(i);
+        getCombinations(i + 1, currentCombo);
+        currentCombo.pop();
+      }
+    };
+
+    getCombinations(0, []);
+
+    // Takımları kendi içinde en yüksek reytingden düşüğe sırala ki ekranda güzel görünsün
+    bestTeamA.sort((a, b) => getPosRating(b) - getPosRating(a));
+    bestTeamB.sort((a, b) => getPosRating(b) - getPosRating(a));
+
+    setTeamA(bestTeamA);
+    setTeamB(bestTeamB);
     setShowPreview(true);
   };
 
