@@ -49,11 +49,17 @@ export default function PlayerForm() {
         </div>
 
         <form action={async (formData) => {
+          if (loading) return; // Çift tıklama koruması
           setLoading(true);
-          await addPlayer(formData);
-          setLoading(false);
-          setIsOpen(false);
-          resetForm();
+          try {
+            await addPlayer(formData);
+            setIsOpen(false);
+            resetForm();
+          } catch (error) {
+            console.error("Kaydetme hatası:", error);
+          } finally {
+            setLoading(false);
+          }
         }} className="modal-body">
           
           <div>
