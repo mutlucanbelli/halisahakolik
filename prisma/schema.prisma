@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Player {
+  id          String   @id @default(cuid())
+  username    String   @unique
+  password    String
+  mustChangePassword Boolean @default(true)
+  name        String
+  positions   String
+  
+  rating_GK   Float    @default(50.0)
+  rating_DEF  Float    @default(50.0)
+  rating_MID  Float    @default(50.0)
+  rating_FWD  Float    @default(50.0)
+  
+  rating      Float    @default(50.0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  matches     MatchPlayer[]
+  votesGiven  Vote[] @relation("Voter")
+  votesReceived Vote[] @relation("Target")
+}
+
+model Match {
+  id          String   @id @default(cuid())
+  date        DateTime
+  status      String   @default("PENDING")
+  activeVotePlayerId String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  players     MatchPlayer[]
+  votes       Vote[]
+}
+
+model MatchPlayer {
+  id           String @id @default(cuid())
+  matchId      String
+  playerId     String
+  team         String 
+  position     String 
+  earnedRating Float? 
+  isApplied    Boolean @default(false)
+
+  match        Match  @relation(fields: [matchId], references: [id])
+  player       Player @relation(fields: [playerId], references: [id])
+
+  @@unique([matchId, playerId])
+}
+
+model Vote {
+  id        String @id @default(cuid())
+  matchId   String
+  voterId   String
+  targetId  String
+  rating    Int
+  
+  match     Match  @relation(fields: [matchId], references: [id])
+  voter     Player @relation("Voter", fields: [voterId], references: [id])
+  target    Player @relation("Target", fields: [targetId], references: [id])
+
+  @@unique([matchId, voterId, targetId])
+}
