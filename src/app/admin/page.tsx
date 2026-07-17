@@ -1,13 +1,11 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { logoutAdmin } from "./actions";
 import prisma from "@/lib/prisma";
 import { 
   Users, CalendarDays, Activity, PlusCircle, UserPlus, 
-  LogOut, Trophy, Medal, ArrowRight, Clock, Calendar 
+  Trophy, Medal, ArrowRight, Clock, Calendar 
 } from "lucide-react";
 import Link from "next/link";
-import ResetDataButton from "./ResetDataButton";
 
 export default async function AdminDashboard() {
   const cookieStore = await cookies();
@@ -253,17 +251,7 @@ export default async function AdminDashboard() {
             </div>
           </Link>
         </div>
-        <div className="mt-2">
-          <ResetDataButton />
-        </div>
       </section>
-
-      {/* Logout */}
-      <form action={logoutAdmin} className="mt-4">
-        <button type="submit" className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 font-bold py-4 rounded-xl hover:bg-red-100 transition-colors active:scale-[0.98] border border-red-100 shadow-sm">
-          <LogOut size={18} /> Güvenli Çıkış
-        </button>
-      </form>
 
     </div>
   );
