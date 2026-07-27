@@ -8,6 +8,7 @@ interface Player {
   name: string;
   rating: number;
   positions: string;
+  matchPosition?: string;
 }
 
 export default function PitchView({ teamA, teamB }: { teamA: Player[], teamB: Player[] }) {
@@ -18,7 +19,9 @@ export default function PitchView({ teamA, teamB }: { teamA: Player[], teamB: Pl
     const gk: Player[] = []; 
 
     players.forEach(p => {
-      const pos = p.positions.toLowerCase();
+      // O maç için özel atanmış bir mevki varsa onu kullan, yoksa veritabanındaki kayıtlı mevkilerini kullan
+      const pos = (p.matchPosition || p.positions).toLowerCase();
+      
       if (pos.includes("kaleci") || pos.includes("gk")) gk.push(p);
       else if (pos.includes("defans") || pos.includes("stoper") || pos.includes("bek")) def.push(p);
       else if (pos.includes("orta saha") || pos.includes("kanat")) mid.push(p);
@@ -56,7 +59,7 @@ export default function PitchView({ teamA, teamB }: { teamA: Player[], teamB: Pl
               {Math.ceil(p.rating)}
             </span>
             <span className="text-[5px] sm:text-[7px] font-bold text-white/90 leading-none mt-[1px] uppercase">
-              {getPositionAbbr(p.positions)}
+              {getPositionAbbr(p.matchPosition || p.positions.split(',')[0])}
             </span>
           </div>
           <div className="opacity-90 mt-[1px]">
