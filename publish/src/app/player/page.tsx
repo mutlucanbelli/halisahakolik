@@ -106,7 +106,7 @@ export default async function PlayerDashboard() {
     include: { 
       match: {
         include: {
-          votes: { include: { target: true } }
+          votes: { include: { target: true, voter: true } }
         }
       } 
     }
@@ -134,6 +134,19 @@ export default async function PlayerDashboard() {
         lastMatchMVPRating = Math.ceil(avg);
       }
     });
+  }
+
+  // Son maçta bana puan verenler
+  let highestVoter = null;
+  let lowestVoter = null;
+
+  if (lastMatchPlayer && lastMatchPlayer.match.votes) {
+    const myVotes = lastMatchPlayer.match.votes.filter((v: any) => v.targetId === player.id);
+    if (myVotes.length > 0) {
+      myVotes.sort((a: any, b: any) => b.rating - a.rating);
+      highestVoter = { name: myVotes[0].voter?.name || 'Bilinmiyor', rating: myVotes[0].rating };
+      lowestVoter = { name: myVotes[myVotes.length - 1].voter?.name || 'Bilinmiyor', rating: myVotes[myVotes.length - 1].rating };
+    }
   }
 
   // 4. Canlı Oylamada Olan Maç (Eğer varsa)
@@ -266,6 +279,26 @@ export default async function PlayerDashboard() {
                 </div>
               )}
             </div>
+
+            {/* En Yüksek ve En Düşük Puan Verenler */}
+            {highestVoter && lowestVoter && (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex flex-col justify-between">
+                  <span className="text-[10px] font-black uppercase text-emerald-600 tracking-wider">En Yüksek Puan Veren</span>
+                  <div className="flex items-end justify-between mt-1">
+                    <span className="text-sm font-bold text-emerald-900 truncate pr-2">{highestVoter.name}</span>
+                    <span className="text-sm font-black text-emerald-700 bg-white px-1.5 py-0.5 rounded shadow-sm">{highestVoter.rating}</span>
+                  </div>
+                </div>
+                <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 flex flex-col justify-between">
+                  <span className="text-[10px] font-black uppercase text-rose-600 tracking-wider">En Düşük Puan Veren</span>
+                  <div className="flex items-end justify-between mt-1">
+                    <span className="text-sm font-bold text-rose-900 truncate pr-2">{lowestVoter.name}</span>
+                    <span className="text-sm font-black text-rose-700 bg-white px-1.5 py-0.5 rounded shadow-sm">{lowestVoter.rating}</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center">
@@ -328,6 +361,21 @@ export default async function PlayerDashboard() {
                     </div>
                   </div>
                 ))}
+                
+                {/* Takım A Toplamlar */}
+                <div className="flex justify-between items-center px-3 py-2 mt-1 rounded-lg bg-blue-50 border border-blue-200">
+                  <span className="text-xs font-black text-blue-900">Takım Toplamı</span>
+                  <div className="flex gap-4">
+                    <div className="flex flex-col items-center">
+                      <span className="text-[9px] font-bold text-blue-600">OVR</span>
+                      <span className="text-sm font-black text-blue-800">{teamA.reduce((sum, p) => sum + Math.ceil(p.rating), 0)}</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-[9px] font-bold text-emerald-600">FORM</span>
+                      <span className="text-sm font-black text-emerald-700">{teamA.reduce((sum, p) => sum + (p.form > 0 ? Math.ceil(p.form) : 0), 0)}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
               
               {/* Takım B */}
@@ -351,6 +399,21 @@ export default async function PlayerDashboard() {
                     </div>
                   </div>
                 ))}
+
+                {/* Takım B Toplamlar */}
+                <div className="flex justify-between items-center px-3 py-2 mt-1 rounded-lg bg-red-50 border border-red-200">
+                  <span className="text-xs font-black text-red-900">Takım Toplamı</span>
+                  <div className="flex gap-4">
+                    <div className="flex flex-col items-center">
+                      <span className="text-[9px] font-bold text-red-600">OVR</span>
+                      <span className="text-sm font-black text-red-800">{teamB.reduce((sum, p) => sum + Math.ceil(p.rating), 0)}</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-[9px] font-bold text-emerald-600">FORM</span>
+                      <span className="text-sm font-black text-emerald-700">{teamB.reduce((sum, p) => sum + (p.form > 0 ? Math.ceil(p.form) : 0), 0)}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
