@@ -9,6 +9,17 @@ import ChangePasswordModal from "./ChangePasswordModal";
 import LiveVoteClient from "./LiveVoteClient";
 import AutoRefreshClient from "./AutoRefreshClient";
 
+async function getPlayerForm(playerId: string) {
+  const lastMatches = await prisma.matchPlayer.findMany({
+    where: { playerId, match: { status: "COMPLETED" }, earnedRating: { not: null } },
+    orderBy: { match: { date: "desc" } },
+    take: 3
+  });
+  if (lastMatches.length === 0) return 0;
+  const sum = lastMatches.reduce((acc, mp) => acc + (mp.earnedRating || 0), 0);
+  return sum / lastMatches.length;
+}
+
 export default async function PlayerDashboard() {
   const cookieStore = await cookies();
   const playerId = cookieStore.get("player_session")?.value;
@@ -25,6 +36,8 @@ export default async function PlayerDashboard() {
   if (!player) {
     redirect("/");
   }
+
+  const myFormScore = await getPlayerForm(player.id);
 
   // 2. Oyuncunun kadroda olduğu en yakın PENDING maçı bul
   const nextMatch = await prisma.match.findFirst({
@@ -45,8 +58,37 @@ export default async function PlayerDashboard() {
   let teamB: any[] = [];
 
   if (nextMatch) {
-    teamA = nextMatch.players.filter(mp => mp.team === 'A').map(mp => mp.player);
-    teamB = nextMatch.players.filter(mp => mp.team === 'B').map(mp => mp.player);
+    const rawTeamA = nextMatch.players.filter(mp => mp.team === 'A').map(mp => mp.player);
+    const rawTeamB = nextMatch.players.filter(mp => mp.team === 'B').map(mp => mp.player);
+    
+    // Form skorlarını ekle ve mevkilere göre sırala (Kaleci -> Defans -> Orta Saha -> Forvet)
+    const getPosVal = (pos: string) => {
+      const p = (pos || "").toLowerCase();
+      if (p.includes("kaleci") || p.includes("gk")) return 1;
+      if (p.includes("defans") || p.includes("stoper") || p.includes("bek")) return 2;
+      if (p.includes("orta saha") || p.includes("mid")) return 3;
+      return 4; // forvet
+    };
+
+    const enhanceAndSort = async (team: any[]) => {
+      const enhanced = await Promise.all(team.map(async p => {
+        const form = await getPlayerForm(p.id);
+        const nextMp = nextMatch.players.find(mp => mp.playerId === p.id);
+        const matchPosition = nextMp ? nextMp.position : p.positions.split(',')[0];
+        return { ...p, form, matchPosition };
+      }));
+      
+      return enhanced.sort((a, b) => {
+        const pA = getPosVal(a.matchPosition);
+        const pB = getPosVal(b.matchPosition);
+        if (pA !== pB) return pA - pB;
+        return b.rating - a.rating; // aynı mevkide rating'e göre
+      });
+    };
+
+    teamA = await enhanceAndSort(rawTeamA);
+    teamB = await enhanceAndSort(rawTeamB);
+
     const myMatchPlayer = nextMatch.players.find(mp => mp.playerId === player.id);
     if (myMatchPlayer) {
       myTeam = myMatchPlayer.team;
@@ -151,51 +193,30 @@ export default async function PlayerDashboard() {
         </div>
       </div>
 
-      {/* Oyuncu Kişisel Kartı */}
-      <div className="bg-gradient-to-br from-slate-900 to-black rounded-3xl p-6 text-white shadow-xl shadow-black/20 relative overflow-hidden">
-        <div className="absolute -right-10 -bottom-10 opacity-10">
-          <Shield size={160} />
-        </div>
-        <div className="relative z-10 flex items-center justify-between">
+      {/* Oyuncu Kişisel Kartları (Grid) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Profil Kartı */}
+        <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center justify-between shadow-sm">
           <div className="flex flex-col">
-            <span className="text-slate-400 font-bold uppercase text-xs tracking-wider mb-1">Mevki: {player.positions.replace(',', ' - ')}</span>
-            <span className="text-3xl font-black">{player.name}</span>
-            <div className="flex items-center gap-2 mt-3">
-              <span className="bg-white/10 px-3 py-1 rounded-full text-xs font-bold border border-white/20">Genel Sıralama: #{myRank}</span>
-            </div>
+            <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider mb-1">Profil</span>
+            <span className="text-xl font-black text-slate-800">{player.name}</span>
+            <span className="text-xs font-bold text-slate-500 mt-1">{player.positions.replace(',', ' - ')}</span>
           </div>
-          <div className="w-20 h-24 bg-gradient-to-b from-yellow-400 to-amber-600 rounded-xl flex flex-col items-center justify-center shadow-lg border-2 border-yellow-300 transform rotate-3">
-            <span className="text-xs font-black text-amber-900 uppercase">OVR</span>
-            <span className="text-3xl font-black text-white">{Math.ceil(player.rating)}</span>
+          <div className="flex flex-col items-end">
+            <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">Genel Sıralama: #{myRank}</span>
           </div>
         </div>
 
-        {/* Yeni Mevki Bazlı Puanlar */}
-        <div className="grid grid-cols-4 gap-2 mt-8 relative z-10">
-          {player.positions.includes("Kaleci") && (
-            <div className="bg-white/5 rounded-xl p-2 text-center border border-white/10">
-              <div className="text-[10px] text-slate-400 font-bold mb-1">GK</div>
-              <div className="text-lg font-black">{Math.ceil(player.rating_GK)}</div>
-            </div>
-          )}
-          {player.positions.includes("Defans") && (
-            <div className="bg-white/5 rounded-xl p-2 text-center border border-white/10">
-              <div className="text-[10px] text-slate-400 font-bold mb-1">DEF</div>
-              <div className="text-lg font-black">{Math.ceil(player.rating_DEF)}</div>
-            </div>
-          )}
-          {player.positions.includes("Orta Saha") && (
-            <div className="bg-white/5 rounded-xl p-2 text-center border border-white/10">
-              <div className="text-[10px] text-slate-400 font-bold mb-1">MID</div>
-              <div className="text-lg font-black">{Math.ceil(player.rating_MID)}</div>
-            </div>
-          )}
-          {(player.positions.includes("Forvet") || player.positions.includes("Kanat")) && (
-            <div className="bg-white/5 rounded-xl p-2 text-center border border-white/10">
-              <div className="text-[10px] text-slate-400 font-bold mb-1">FWD</div>
-              <div className="text-lg font-black">{Math.ceil(player.rating_FWD)}</div>
-            </div>
-          )}
+        {/* Genel OVR ve Form Kartı */}
+        <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center justify-between shadow-sm">
+          <div className="flex flex-col text-center items-center justify-center border-r border-slate-100 pr-6 w-1/2">
+            <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider mb-1">Genel Güç</span>
+            <span className="text-3xl font-black text-slate-800">{Math.ceil(player.rating)} <span className="text-sm font-bold text-slate-400">OVR</span></span>
+          </div>
+          <div className="flex flex-col text-center items-center justify-center pl-6 w-1/2">
+            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-wider mb-1">Form (Son 3)</span>
+            <span className="text-3xl font-black text-slate-800">{myFormScore > 0 ? myFormScore.toFixed(1) : '-'} <span className="text-sm font-bold text-slate-400">AVG</span></span>
+          </div>
         </div>
       </div>
 
@@ -279,23 +300,49 @@ export default async function PlayerDashboard() {
             </div>
 
             {/* Kadro Önizleme */}
-            <div className="grid grid-cols-2 gap-4 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
               {/* Takım A */}
               <div className="flex flex-col gap-2">
-                <div className="text-center font-black text-blue-700 text-sm pb-1 border-b border-blue-200">Takım A</div>
+                <div className="text-center font-black text-blue-700 text-sm pb-1 border-b border-blue-200 mb-1">Takım A</div>
                 {teamA.map(p => (
-                  <div key={p.id} className={`text-xs font-bold px-2 py-1.5 rounded-md ${p.id === player.id ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-800'}`}>
-                    {p.name}
+                  <div key={p.id} className={`flex justify-between items-center px-3 py-2 rounded-lg border shadow-sm transition-all ${p.id === player.id ? 'bg-blue-600 text-white border-blue-700 scale-[1.02]' : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300'}`}>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold">{p.name}</span>
+                      <span className={`text-[9px] uppercase font-bold tracking-wider mt-0.5 ${p.id === player.id ? 'text-blue-200' : 'text-slate-400'}`}>{p.matchPosition}</span>
+                    </div>
+                    <div className="flex gap-3 text-right">
+                      <div className="flex flex-col items-center">
+                        <span className={`text-[8px] uppercase font-bold ${p.id === player.id ? 'text-blue-200' : 'text-amber-500'}`}>OVR</span>
+                        <span className="text-xs font-black">{Math.ceil(p.rating)}</span>
+                      </div>
+                      <div className={`flex flex-col items-center pl-3 border-l ${p.id === player.id ? 'border-blue-500/50' : 'border-slate-100'}`}>
+                        <span className={`text-[8px] uppercase font-bold ${p.id === player.id ? 'text-blue-200' : 'text-emerald-500'}`}>Form</span>
+                        <span className="text-xs font-black">{p.form > 0 ? p.form.toFixed(1) : '-'}</span>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
               
               {/* Takım B */}
               <div className="flex flex-col gap-2">
-                <div className="text-center font-black text-red-700 text-sm pb-1 border-b border-red-200">Takım B</div>
+                <div className="text-center font-black text-red-700 text-sm pb-1 border-b border-red-200 mb-1">Takım B</div>
                 {teamB.map(p => (
-                  <div key={p.id} className={`text-xs font-bold px-2 py-1.5 rounded-md ${p.id === player.id ? 'bg-red-600 text-white' : 'bg-red-50 text-red-800'}`}>
-                    {p.name}
+                  <div key={p.id} className={`flex justify-between items-center px-3 py-2 rounded-lg border shadow-sm transition-all ${p.id === player.id ? 'bg-red-600 text-white border-red-700 scale-[1.02]' : 'bg-white text-slate-700 border-slate-200 hover:border-red-300'}`}>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold">{p.name}</span>
+                      <span className={`text-[9px] uppercase font-bold tracking-wider mt-0.5 ${p.id === player.id ? 'text-red-200' : 'text-slate-400'}`}>{p.matchPosition}</span>
+                    </div>
+                    <div className="flex gap-3 text-right">
+                      <div className="flex flex-col items-center">
+                        <span className={`text-[8px] uppercase font-bold ${p.id === player.id ? 'text-red-200' : 'text-amber-500'}`}>OVR</span>
+                        <span className="text-xs font-black">{Math.ceil(p.rating)}</span>
+                      </div>
+                      <div className={`flex flex-col items-center pl-3 border-l ${p.id === player.id ? 'border-red-500/50' : 'border-slate-100'}`}>
+                        <span className={`text-[8px] uppercase font-bold ${p.id === player.id ? 'text-red-200' : 'text-emerald-500'}`}>Form</span>
+                        <span className="text-xs font-black">{p.form > 0 ? p.form.toFixed(1) : '-'}</span>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
