@@ -8,6 +8,7 @@ import LeaderboardClient from "./LeaderboardClient";
 import ChangePasswordModal from "./ChangePasswordModal";
 import LiveVoteClient from "./LiveVoteClient";
 import AutoRefreshClient from "./AutoRefreshClient";
+import PitchView from "@/components/PitchView";
 
 async function getPlayerForm(playerId: string) {
   const lastMatches = await prisma.matchPlayer.findMany({
@@ -215,7 +216,7 @@ export default async function PlayerDashboard() {
           </div>
           <div className="flex flex-col text-center items-center justify-center pl-6 w-1/2">
             <span className="text-[10px] font-black text-emerald-500 uppercase tracking-wider mb-1">Form (Son 3)</span>
-            <span className="text-3xl font-black text-slate-800">{myFormScore > 0 ? myFormScore.toFixed(1) : '-'} <span className="text-sm font-bold text-slate-400">AVG</span></span>
+            <span className="text-3xl font-black text-slate-800">{myFormScore > 0 ? Math.round(myFormScore) : '-'} <span className="text-sm font-bold text-slate-400">AVG</span></span>
           </div>
         </div>
       </div>
@@ -292,15 +293,20 @@ export default async function PlayerDashboard() {
             </div>
 
             {/* Hangi Takımdasın */}
-            <div className="bg-white/60 p-3 rounded-xl border border-amber-100 flex items-center justify-between">
+            <div className="bg-white/60 p-3 rounded-xl border border-amber-100 flex items-center justify-between mb-2">
               <span className="font-bold text-slate-700">Durum:</span>
               <span className={`px-4 py-1.5 rounded-full font-black text-sm text-white ${myTeam === 'A' ? 'bg-blue-600' : 'bg-red-600'}`}>
                 TAKIM {myTeam} İÇİNDESİN
               </span>
             </div>
 
-            {/* Kadro Önizleme */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+            {/* Saha Görünümü */}
+            <div className="w-full">
+              <PitchView teamA={teamA} teamB={teamB} />
+            </div>
+
+            {/* Kadro Önizleme (Detaylı Liste) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
               {/* Takım A */}
               <div className="flex flex-col gap-2">
                 <div className="text-center font-black text-blue-700 text-sm pb-1 border-b border-blue-200 mb-1">Takım A</div>
@@ -317,7 +323,7 @@ export default async function PlayerDashboard() {
                       </div>
                       <div className={`flex flex-col items-center pl-3 border-l ${p.id === player.id ? 'border-blue-500/50' : 'border-slate-100'}`}>
                         <span className={`text-[8px] uppercase font-bold ${p.id === player.id ? 'text-blue-200' : 'text-emerald-500'}`}>Form</span>
-                        <span className="text-xs font-black">{p.form > 0 ? p.form.toFixed(1) : '-'}</span>
+                        <span className="text-xs font-black">{p.form > 0 ? Math.round(p.form) : '-'}</span>
                       </div>
                     </div>
                   </div>
@@ -340,7 +346,7 @@ export default async function PlayerDashboard() {
                       </div>
                       <div className={`flex flex-col items-center pl-3 border-l ${p.id === player.id ? 'border-red-500/50' : 'border-slate-100'}`}>
                         <span className={`text-[8px] uppercase font-bold ${p.id === player.id ? 'text-red-200' : 'text-emerald-500'}`}>Form</span>
-                        <span className="text-xs font-black">{p.form > 0 ? p.form.toFixed(1) : '-'}</span>
+                        <span className="text-xs font-black">{p.form > 0 ? Math.round(p.form) : '-'}</span>
                       </div>
                     </div>
                   </div>
