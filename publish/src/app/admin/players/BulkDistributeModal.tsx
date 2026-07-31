@@ -142,7 +142,7 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
         </div>
 
         {/* Body List - Sorted By Preview OVR Descending */}
-        <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-3 bg-slate-100/70">
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1 flex flex-col gap-3 bg-slate-100/70">
           {sortedPendingPlayers.length > 0 ? (
             <div className="flex flex-col gap-2.5">
               {sortedPendingPlayers.map((item: any) => {
@@ -152,63 +152,21 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
                 return (
                   <div
                     key={item.player.id}
-                    className="p-4 bg-white border border-slate-200/90 rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center justify-between gap-3 group"
+                    className="p-3.5 bg-white border border-slate-200/90 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col gap-2.5"
                   >
-                    {/* Oyuncu Bilgisi - Net ve Okunabilir İsim */}
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-lg text-white shrink-0 shadow-sm ${
-                        item.player.positions?.includes("Kaleci") ? 'bg-purple-600' :
-                        item.player.positions?.includes("Defans") ? 'bg-blue-600' :
-                        item.player.positions?.includes("Forvet") ? 'bg-red-600' : 'bg-emerald-600'
-                      }`}>
-                        {item.player.name.charAt(0).toUpperCase()}
-                      </div>
-
-                      <div className="flex flex-col min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-black text-base text-slate-900 tracking-tight truncate">{item.player.name}</span>
-                          <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded uppercase">
-                            {item.player.positions?.split(',')[0]}
-                          </span>
-                        </div>
-
-                        <div className="flex flex-wrap gap-1.5 text-[10px] font-semibold mt-1">
-                          {item.gkMatches.length > 0 && (
-                            <span className="text-purple-700 font-bold bg-purple-50 border border-purple-100 px-2 py-0.5 rounded-md">
-                              🧤 {item.gkMatches.length} Kaleci Maçı (Ort: {Math.ceil(item.gkAvg)})
-                            </span>
-                          )}
-                          {item.outfieldMatches.length > 0 && (
-                            <span className="text-emerald-700 font-bold bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md">
-                              ⚽ {item.outfieldMatches.length} Alan Maçı (Ort: {Math.ceil(item.outfieldAvg)})
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* OVR Değişim Kartı */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200">
-                        <div className="flex flex-col items-center">
-                          <span className="text-[8px] font-bold text-slate-400 uppercase">Eski</span>
-                          <span className="text-xs font-black text-slate-500">{item.currentCeil}</span>
-                        </div>
-
-                        <ArrowRight size={12} className="text-slate-400 mx-0.5" />
-
-                        <div className="flex flex-col items-center">
-                          <span className="text-[8px] font-bold text-slate-400 uppercase">Yeni OVR</span>
-                          <span className={`text-base font-black ${
-                            isUp ? 'text-emerald-600' : isDown ? 'text-rose-600' : 'text-slate-800'
-                          }`}>
-                            {item.previewCeil}
-                          </span>
-                        </div>
+                    {/* Satır 1: Oyuncu İsmi, Mevkisi ve Fark Rozeti (Mobilde Kapanmama Garantili) */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-black text-base text-slate-900 tracking-tight truncate">
+                          {item.player.name}
+                        </span>
+                        <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full uppercase shrink-0">
+                          {item.player.positions?.split(',')[0]}
+                        </span>
                       </div>
 
                       {/* Fark Rozeti */}
-                      <div className={`px-2.5 py-2 rounded-xl text-xs font-black flex items-center justify-center gap-1 border shadow-xs min-w-[52px] ${
+                      <div className={`px-2.5 py-1 rounded-xl text-xs font-black flex items-center gap-1 border shrink-0 ${
                         isUp
                           ? 'bg-emerald-500 border-emerald-600 text-white shadow-emerald-500/20'
                           : isDown
@@ -219,6 +177,34 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
                         {isDown && <TrendingDown size={12} />}
                         {!isUp && !isDown && <Minus size={12} />}
                         <span>{isUp ? `+${item.diff}` : item.diff}</span>
+                      </div>
+                    </div>
+
+                    {/* Satır 2: Maç Detayları ve Eski ➔ Yeni OVR */}
+                    <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap border-t border-slate-100 pt-2">
+                      <div className="flex flex-wrap gap-1.5 text-[10px] font-semibold">
+                        {item.gkMatches.length > 0 && (
+                          <span className="text-purple-700 font-bold bg-purple-50 border border-purple-100 px-2 py-0.5 rounded-md">
+                            🧤 {item.gkMatches.length} Kaleci Maçı (Ort: {Math.ceil(item.gkAvg)})
+                          </span>
+                        )}
+                        {item.outfieldMatches.length > 0 && (
+                          <span className="text-emerald-700 font-bold bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md">
+                            ⚽ {item.outfieldMatches.length} Alan Maçı (Ort: {Math.ceil(item.outfieldAvg)})
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200 shrink-0">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">Eski:</span>
+                        <span className="text-xs font-black text-slate-500">{item.currentCeil}</span>
+                        <ArrowRight size={11} className="text-slate-400 mx-0.5" />
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">Yeni:</span>
+                        <span className={`text-sm font-black ${
+                          isUp ? 'text-emerald-600' : isDown ? 'text-rose-600' : 'text-slate-800'
+                        }`}>
+                          {item.previewCeil}
+                        </span>
                       </div>
                     </div>
                   </div>
