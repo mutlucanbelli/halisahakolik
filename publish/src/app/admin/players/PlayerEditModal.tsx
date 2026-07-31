@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { updatePlayer, reevaluatePlayer, resetPlayerStats } from "./actions";
-import { Edit2, X, RefreshCw } from "lucide-react";
+import { Edit2, X, RefreshCw, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { createPortal } from "react-dom";
 
 const POSITIONS = ["Kaleci", "Defans", "Orta Saha", "Kanat", "Forvet"];
@@ -59,6 +59,8 @@ export default function PlayerEditModal({ player }: { player: any }) {
   const gkMatches = unappliedMatches.filter((m: any) => m.position === "Kaleci");
   const outfieldMatches = unappliedMatches.filter((m: any) => m.position !== "Kaleci");
 
+  const isEligible = unappliedCount >= 2;
+
   // Ortalama hesaplama yardımcısı
   const calcAvg = (arr: any[]) => arr.length > 0 ? arr.reduce((s: number, m: any) => s + m.earnedRating, 0) / arr.length : 0;
   const gkAvg = calcAvg(gkMatches);
@@ -73,8 +75,10 @@ export default function PlayerEditModal({ player }: { player: any }) {
     if (mainPos.includes("defans") || mainPos.includes("stoper") || mainPos.includes("bek")) previewOutfield = outfieldAvg;
     else if (mainPos.includes("forvet") || mainPos.includes("santrfor") || mainPos.includes("kanat")) previewOutfield = outfieldAvg;
     else if (!mainPos.includes("kaleci") && !mainPos.includes("gk")) previewOutfield = outfieldAvg;
-    // Kaleci ana mevki ise outfield OVR'yi değiştirmez, sub-rating'leri günceller
   }
+
+  const gkDiff = Math.ceil(previewGK) - Math.ceil(player.rating_GK);
+  const outfieldDiff = Math.ceil(previewOutfield) - Math.ceil(player.rating);
 
   const modalContent = (
     <div className="modal-overlay">
@@ -206,65 +210,80 @@ export default function PlayerEditModal({ player }: { player: any }) {
               <p className="text-xs text-blue-600 font-medium text-center py-1">Dağıtılacak bekleyen puan yok.</p>
             )}
 
+            {!isEligible && unappliedCount > 0 && (
+              <p className="text-xs font-bold text-amber-700 bg-amber-100/80 p-2 rounded-lg text-center border border-amber-200">
+                ⚠️ Puan dağıtımı yapabilmek için en az 2 tamamlanmış maç gereklidir. (Mevcut: {unappliedCount} Maç)
+              </p>
+            )}
+
             {/* Dağıt butonları */}
-            <div className="flex flex-col gap-2">
+            {isEligible && (
+              <div className="flex flex-col gap-2">
 
-              {/* Kaleci dağıt butonu */}
-              {gkMatches.length > 0 && (
-                <div className="bg-violet-50 border border-violet-200 rounded-xl p-3 flex flex-col gap-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-black text-violet-700 uppercase tracking-wide">🧤 Kaleci Maçları</span>
-                      <span className="text-[10px] text-violet-500">{gkMatches.length} maç · Ort: {Math.ceil(gkAvg)}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-black text-slate-400">{Math.ceil(player.rating_GK)}</span>
-                      <span className="text-slate-300">→</span>
-                      <span className="text-sm font-black text-violet-700">{Math.ceil(previewGK)}</span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleReevaluate('gk')}
-                    disabled={loading}
-                    className="w-full font-bold py-2.5 px-4 rounded-lg bg-violet-600 text-white hover:bg-violet-700 flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-50"
-                  >
-                    <RefreshCw size={14} /> Kaleci OVR'yi Dağıt
-                  </button>
-                </div>
-              )}
-
-              {/* Alan oyuncusu dağıt butonu */}
-              {outfieldMatches.length > 0 && (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex flex-col gap-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-black text-emerald-700 uppercase tracking-wide">⚽ Alan Oyuncusu Maçları</span>
-                      <span className="text-[10px] text-emerald-500">{outfieldMatches.length} maç · Ort: {Math.ceil(outfieldAvg)}</span>
-                    </div>
-                    {!mainPos.includes("kaleci") && !mainPos.includes("gk") && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-black text-slate-400">{Math.ceil(player.rating)}</span>
-                        <span className="text-slate-300">→</span>
-                        <span className="text-sm font-black text-emerald-700">{Math.ceil(previewOutfield)}</span>
+                {/* Kaleci dağıt butonu */}
+                {gkMatches.length > 0 && (
+                  <div className="bg-violet-50 border border-violet-200 rounded-xl p-3 flex flex-col gap-2">
+                    <div className="flex justify-between items-center">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black text-violet-700 uppercase tracking-wide">🧤 Kaleci Maçları</span>
+                        <span className="text-[10px] text-violet-500">{gkMatches.length} maç · Ort: {Math.ceil(gkAvg)}</span>
                       </div>
-                    )}
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-black text-slate-400">{Math.ceil(player.rating_GK)}</span>
+                        <span className="text-slate-300">→</span>
+                        <span className={`text-sm font-black ${
+                          gkDiff > 0 ? 'text-emerald-600' : gkDiff < 0 ? 'text-rose-600' : 'text-slate-700'
+                        }`}>{Math.ceil(previewGK)}</span>
+                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${
+                          gkDiff > 0 ? 'bg-emerald-100 text-emerald-700' : gkDiff < 0 ? 'bg-rose-100 text-rose-700' : 'bg-slate-200 text-slate-600'
+                        }`}>{gkDiff > 0 ? `+${gkDiff}` : gkDiff}</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleReevaluate('gk')}
+                      disabled={loading}
+                      className="w-full font-bold py-2.5 px-4 rounded-lg bg-violet-600 text-white hover:bg-violet-700 flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-50"
+                    >
+                      <RefreshCw size={14} /> Kaleci OVR'yi Dağıt
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleReevaluate('outfield')}
-                    disabled={loading}
-                    className="w-full font-bold py-2.5 px-4 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-50"
-                  >
-                    <RefreshCw size={14} /> Alan Oyuncusu OVR'yi Dağıt
-                  </button>
-                </div>
-              )}
+                )}
 
-              {unappliedCount === 0 && (
-                <p className="text-xs text-slate-400 text-center font-semibold">Dağıtılacak bekleyen maç yok.</p>
-              )}
-            </div>
+                {/* Alan oyuncusu dağıt butonu */}
+                {outfieldMatches.length > 0 && (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex flex-col gap-2">
+                    <div className="flex justify-between items-center">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black text-emerald-700 uppercase tracking-wide">⚽ Alan Oyuncusu Maçları</span>
+                        <span className="text-[10px] text-emerald-500">{outfieldMatches.length} maç · Ort: {Math.ceil(outfieldAvg)}</span>
+                      </div>
+                      {!mainPos.includes("kaleci") && !mainPos.includes("gk") && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-black text-slate-400">{Math.ceil(player.rating)}</span>
+                          <span className="text-slate-300">→</span>
+                          <span className={`text-sm font-black ${
+                            outfieldDiff > 0 ? 'text-emerald-600' : outfieldDiff < 0 ? 'text-rose-600' : 'text-slate-700'
+                          }`}>{Math.ceil(previewOutfield)}</span>
+                          <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${
+                            outfieldDiff > 0 ? 'bg-emerald-100 text-emerald-700' : outfieldDiff < 0 ? 'bg-rose-100 text-rose-700' : 'bg-slate-200 text-slate-600'
+                          }`}>{outfieldDiff > 0 ? `+${outfieldDiff}` : outfieldDiff}</span>
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleReevaluate('outfield')}
+                      disabled={loading}
+                      className="w-full font-bold py-2.5 px-4 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-50"
+                    >
+                      <RefreshCw size={14} /> Alan Oyuncusu OVR'yi Dağıt
+                    </button>
+                  </div>
+                )}
+
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { bulkReevaluateAll } from "./actions";
-import { RefreshCw, X, CheckCircle2, ArrowRight } from "lucide-react";
+import { RefreshCw, X, CheckCircle2, ArrowRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { createPortal } from "react-dom";
 
 export default function BulkDistributeModal({ players }: { players: any[] }) {
@@ -14,14 +14,15 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
     setMounted(true);
   }, []);
 
-  // Bekleyen puanı olan oyuncuları ve değişim önizlemelerini hesapla
+  // Sadece en az 2 tamamlanmış maçı olan oyuncuları hesapla
   const pendingPlayers = players
     .map(player => {
       const unappliedMatches = player.matches?.filter(
         (m: any) => !m.isApplied && m.earnedRating != null && m.match?.status === "COMPLETED"
       ) || [];
 
-      if (unappliedMatches.length === 0) return null;
+      // En az 2 tamamlanmış maç gereklidir
+      if (unappliedMatches.length < 2) return null;
 
       const gkMatches = unappliedMatches.filter((m: any) => m.position === "Kaleci");
       const outfieldMatches = unappliedMatches.filter((m: any) => m.position !== "Kaleci");
@@ -43,6 +44,10 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
         if (outfieldMatches.length > 0) previewRating = outfieldAvg;
       }
 
+      const currentCeil = Math.ceil(player.rating);
+      const previewCeil = Math.ceil(previewRating);
+      const diff = previewCeil - currentCeil;
+
       return {
         player,
         unappliedCount: unappliedMatches.length,
@@ -51,7 +56,10 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
         gkAvg,
         outfieldAvg,
         currentRating: player.rating,
-        previewRating
+        previewRating,
+        currentCeil,
+        previewCeil,
+        diff
       };
     })
     .filter(Boolean);
@@ -91,7 +99,7 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
               <RefreshCw size={18} className="text-blue-600" /> Toplu Puan Dağıtımı
             </h2>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
-              Tüm oyuncuların dağıtılmamış maç puanları OVR değerlerine aktarılacaktır.
+              En az 2 maç tamamlamış oyuncuların puanları OVR değerlerine yansıtılır.
             </p>
           </div>
           <button
@@ -113,34 +121,59 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
               </div>
 
               <div className="flex flex-col gap-2">
-                {pendingPlayers.map((item: any) => (
-                  <div
-                    key={item.player.id}
-                    className="p-3 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center justify-between gap-3"
-                  >
-                    <div className="flex flex-col min-w-0">
-                      <span className="font-bold text-sm text-slate-900 truncate">{item.player.name}</span>
-                      <div className="flex gap-2 text-[10px] text-slate-400 font-semibold mt-0.5">
-                        {item.gkMatches.length > 0 && (
-                          <span className="text-violet-600 font-bold bg-violet-50 px-1.5 py-0.5 rounded">
-                            🧤 {item.gkMatches.length} Kaleci Maçı (Ort: {Math.ceil(item.gkAvg)})
+                {pendingPlayers.map((item: any) => {
+                  const isUp = item.diff > 0;
+                  const isDown = item.diff < 0;
+
+                  return (
+                    <div
+                      key={item.player.id}
+                      className="p-3 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center justify-between gap-3"
+                    >
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold text-sm text-slate-900 truncate">{item.player.name}</span>
+                        <div className="flex gap-2 text-[10px] text-slate-400 font-semibold mt-0.5">
+                          {item.gkMatches.length > 0 && (
+                            <span className="text-violet-600 font-bold bg-violet-50 px-1.5 py-0.5 rounded">
+                              🧤 {item.gkMatches.length} Kaleci Maçı (Ort: {Math.ceil(item.gkAvg)})
+                            </span>
+                          )}
+                          {item.outfieldMatches.length > 0 && (
+                            <span className="text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">
+                              ⚽ {item.outfieldMatches.length} Alan Maçı (Ort: {Math.ceil(item.outfieldAvg)})
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Değişim Göstergesi (Renklendirilmiş) */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+                          <span className="text-xs font-black text-slate-500">{item.currentCeil}</span>
+                          <ArrowRight size={12} className="text-slate-400" />
+                          <span className={`text-sm font-black ${
+                            isUp ? 'text-emerald-600' : isDown ? 'text-rose-600' : 'text-slate-700'
+                          }`}>
+                            {item.previewCeil}
                           </span>
-                        )}
-                        {item.outfieldMatches.length > 0 && (
-                          <span className="text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">
-                            ⚽ {item.outfieldMatches.length} Alan Maçı (Ort: {Math.ceil(item.outfieldAvg)})
-                          </span>
-                        )}
+                        </div>
+
+                        <div className={`px-2 py-1 rounded-lg text-xs font-black flex items-center gap-1 border ${
+                          isUp
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                            : isDown
+                            ? 'bg-rose-50 border-rose-200 text-rose-700'
+                            : 'bg-slate-50 border-slate-200 text-slate-600'
+                        }`}>
+                          {isUp && <TrendingUp size={12} />}
+                          {isDown && <TrendingDown size={12} />}
+                          {!isUp && !isDown && <Minus size={12} />}
+                          <span>{isUp ? `+${item.diff}` : item.diff}</span>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2 shrink-0 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                      <span className="text-xs font-black text-slate-500">{Math.ceil(item.currentRating)}</span>
-                      <ArrowRight size={12} className="text-slate-400" />
-                      <span className="text-sm font-black text-blue-600">{Math.ceil(item.previewRating)}</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           ) : (
@@ -148,7 +181,7 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
               <CheckCircle2 size={40} className="text-emerald-500 mb-2" />
               <h3 className="font-bold text-slate-800">Dağıtılacak Bekleyen Puan Yok</h3>
               <p className="text-xs text-slate-400 mt-1 max-w-xs">
-                Tüm oyuncuların tamamlanmış maç puanları güncel durumdadır.
+                En az 2 maç tamamlamış ve puanı bekleyen oyuncu bulunmuyor.
               </p>
             </div>
           )}

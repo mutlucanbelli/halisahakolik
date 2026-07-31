@@ -165,7 +165,8 @@ export async function reevaluatePlayer(playerId: string, type: 'gk' | 'outfield'
     }
   });
 
-  if (unappliedMatches.length === 0) return;
+  // En az 2 tamamlanmış maç şartı
+  if (unappliedMatches.length < 2) return;
 
   // Maçları GK ve outfield olarak ayır
   const gkMatches = unappliedMatches.filter(mp => mp.position === "Kaleci");
@@ -181,19 +182,15 @@ export async function reevaluatePlayer(playerId: string, type: 'gk' | 'outfield'
   let idsToMark: string[] = [];
 
   if (type === 'gk' && gkMatches.length > 0) {
-    // Sadece kaleci maçlarının ortalaması → rating_GK
     const newGK = avg(gkMatches);
     updateData.rating_GK = newGK;
-    // Eğer ana mevki kaleci ise genel OVR'yi de güncelle
     if (mainPos.includes("kaleci") || mainPos.includes("gk")) {
       updateData.rating = newGK;
     }
     idsToMark = gkMatches.map(mp => mp.id);
 
   } else if (type === 'outfield' && outfieldMatches.length > 0) {
-    // Mevki fark etmeksizin tüm outfield maçların tek ortalaması
     const newOutfield = avg(outfieldMatches);
-    // Ana mevkiye göre hangi rating alanı güncelleneceğini belirle
     if (mainPos.includes("defans") || mainPos.includes("stoper") || mainPos.includes("bek")) {
       updateData.rating_DEF = newOutfield;
       updateData.rating = newOutfield;
@@ -201,18 +198,16 @@ export async function reevaluatePlayer(playerId: string, type: 'gk' | 'outfield'
       updateData.rating_FWD = newOutfield;
       updateData.rating = newOutfield;
     } else if (mainPos.includes("kaleci") || mainPos.includes("gk")) {
-      // Ana mevki kaleci ama outfield de oynamış: diğer rating'leri güncelle ama genel OVR'yi dokunma
       updateData.rating_DEF = newOutfield;
       updateData.rating_MID = newOutfield;
       updateData.rating_FWD = newOutfield;
     } else {
-      // Orta saha varsayılan
       updateData.rating_MID = newOutfield;
       updateData.rating = newOutfield;
     }
     idsToMark = outfieldMatches.map(mp => mp.id);
   } else {
-    return; // Dağıtılacak uygun maç yok
+    return;
   }
 
   await prisma.$transaction([
@@ -243,7 +238,8 @@ export async function bulkReevaluateAll() {
   });
 
   for (const player of players) {
-    if (player.matches.length === 0) continue;
+    // En az 2 tamamlanmış maç şartı
+    if (player.matches.length < 2) continue;
 
     const gkMatches = player.matches.filter(mp => mp.position === "Kaleci");
     const outfieldMatches = player.matches.filter(mp => mp.position !== "Kaleci");
