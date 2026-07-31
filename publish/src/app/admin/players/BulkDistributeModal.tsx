@@ -64,7 +64,7 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
     .filter(Boolean);
 
   const totalMatches = pendingPlayers.reduce((sum, p) => sum + (p?.unappliedCount || 0), 0);
-  const totalIncreaseCount = pendingPlayers.filter(p => p?.diff > 0).length;
+  const totalIncreaseCount = pendingPlayers.filter(p => (p?.diff ?? 0) > 0).length;
 
   const handleBulkDistribute = async () => {
     setLoading(true);
