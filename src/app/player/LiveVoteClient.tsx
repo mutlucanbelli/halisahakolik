@@ -61,9 +61,11 @@ export default function LiveVoteClient({
     bottom: 0,
     zIndex: 9999,
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
-    padding: '1rem',
+    padding: '1.5rem',
+    paddingTop: '5vh',
+    overflowY: 'auto' as const,
     backgroundColor: 'rgba(0,0,0,0.6)',
     backdropFilter: 'blur(6px)',
   };

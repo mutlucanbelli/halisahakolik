@@ -183,9 +183,11 @@ export default function MatchReportClient({ match }: { match: any }) {
             bottom: 0,
             zIndex: 9999,
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             justifyContent: 'center',
-            padding: '1rem',
+            padding: '1.5rem',
+            paddingTop: '5vh',
+            overflowY: 'auto',
             backgroundColor: 'rgba(0,0,0,0.5)',
             backdropFilter: 'blur(4px)',
           }}
