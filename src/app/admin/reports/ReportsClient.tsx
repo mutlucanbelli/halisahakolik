@@ -42,6 +42,9 @@ export default function ReportsClient({ matches }: { matches: any[] }) {
               }
             });
           }
+
+          // Katılımcı sayısı: herhangi bir oyuncuya oy veren max benzersiz kişi sayısı
+          const uniqueVoters = match.votes ? new Set(match.votes.map((v: any) => v.voterId)).size : 0;
           
           return (
             <div key={match.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300">
@@ -75,8 +78,8 @@ export default function ReportsClient({ matches }: { matches: any[] }) {
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="block text-[10px] font-bold text-gray-400 uppercase">Kullanılan Oy</span>
-                  <span className="block text-sm font-black text-black">{match.votes?.length || 0}</span>
+                  <span className="block text-[10px] font-bold text-gray-400 uppercase">Katılımcı</span>
+                  <span className="block text-sm font-black text-black">{uniqueVoters} Kişi</span>
                 </div>
               </div>
 

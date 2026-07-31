@@ -155,7 +155,7 @@ export async function reevaluatePlayer(playerId: string) {
   const player = await prisma.player.findUnique({ where: { id: playerId } });
   if (!player) return;
 
-  // Sadece işlenmemiş maçları bul (isApplied == false)
+  // Sadece işlenmemiş, tamamlanmış maçları bul
   const unappliedMatches = await prisma.matchPlayer.findMany({
     where: { 
       playerId, 
@@ -165,39 +165,39 @@ export async function reevaluatePlayer(playerId: string) {
     }
   });
 
-  if (unappliedMatches.length === 0) return; // Dağıtılacak puan yok
+  if (unappliedMatches.length === 0) return;
 
-  let new_GK = player.rating_GK;
-  let new_DEF = player.rating_DEF;
-  let new_MID = player.rating_MID;
-  let new_FWD = player.rating_FWD;
+  // Her mevki için o mevkide oynanan maçların saf ortalamasını hesapla
+  const byPos: Record<string, number[]> = {
+    GK: [], DEF: [], MID: [], FWD: []
+  };
 
   for (const mp of unappliedMatches) {
-    const avgForMatch = mp.earnedRating!;
     const pos = mp.position;
-
-    // O mevki için eski puanın %50'si ile yeni maçın %50'sini al
-    if (pos === "Kaleci") {
-      new_GK = new_GK === 50 ? avgForMatch : (new_GK + avgForMatch) / 2;
-    } else if (pos === "Defans") {
-      new_DEF = new_DEF === 50 ? avgForMatch : (new_DEF + avgForMatch) / 2;
-    } else if (pos === "Orta Saha") {
-      new_MID = new_MID === 50 ? avgForMatch : (new_MID + avgForMatch) / 2;
-    } else if (pos === "Forvet" || pos === "Kanat") {
-      new_FWD = new_FWD === 50 ? avgForMatch : (new_FWD + avgForMatch) / 2;
-    } else {
-      new_GK = (new_GK + avgForMatch) / 2;
-      new_DEF = (new_DEF + avgForMatch) / 2;
-      new_MID = (new_MID + avgForMatch) / 2;
-      new_FWD = (new_FWD + avgForMatch) / 2;
+    const earned = mp.earnedRating!;
+    if (pos === "Kaleci") byPos.GK.push(earned);
+    else if (pos === "Defans") byPos.DEF.push(earned);
+    else if (pos === "Orta Saha") byPos.MID.push(earned);
+    else if (pos === "Forvet" || pos === "Kanat") byPos.FWD.push(earned);
+    else {
+      // Bilinmeyen mevki - ana mevkiye ekle
+      byPos.MID.push(earned);
     }
   }
 
-  // Yeni Ana OVR'yi bul
-  const positionsArr = player.positions.split(',').map(p => p.trim());
+  const avg = (arr: number[], fallback: number) =>
+    arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : fallback;
+
+  // Sadece o mevkide maç oynanmışsa güncelle, oynanmamışsa mevcut değeri koru
+  const new_GK  = byPos.GK.length  > 0 ? avg(byPos.GK,  player.rating_GK)  : player.rating_GK;
+  const new_DEF = byPos.DEF.length > 0 ? avg(byPos.DEF, player.rating_DEF) : player.rating_DEF;
+  const new_MID = byPos.MID.length > 0 ? avg(byPos.MID, player.rating_MID) : player.rating_MID;
+  const new_FWD = byPos.FWD.length > 0 ? avg(byPos.FWD, player.rating_FWD) : player.rating_FWD;
+
+  // Genel OVR = ana mevkinin yeni puanı
+  const positionsArr = player.positions.split(',').map((p: string) => p.trim());
   const mainPos = positionsArr[0]?.toLowerCase() || "";
-  
-  let newRating = 50;
+  let newRating: number;
   if (mainPos.includes("kaleci") || mainPos.includes("gk")) newRating = new_GK;
   else if (mainPos.includes("defans") || mainPos.includes("stoper") || mainPos.includes("bek")) newRating = new_DEF;
   else if (mainPos.includes("forvet") || mainPos.includes("santrfor") || mainPos.includes("kanat")) newRating = new_FWD;
@@ -214,7 +214,7 @@ export async function reevaluatePlayer(playerId: string) {
         rating: newRating
       }
     }),
-    // Oyları silmek yerine sadece MatchPlayer kayıtlarını "İşlendi" olarak işaretliyoruz
+    // MatchPlayer kayıtlarını "İşlendi" olarak işaretle
     prisma.matchPlayer.updateMany({
       where: { 
         playerId, 
