@@ -56,6 +56,32 @@ export default function PlayerEditModal({ player }: { player: any }) {
   const unappliedMatches = player.matches?.filter((m: any) => !m.isApplied && m.earnedRating != null && m.match?.status === "COMPLETED") || [];
   const unappliedCount = unappliedMatches.length;
 
+  // Dağıtım öncesi tahmini yeni OVR hesapla
+  const positionsArr = player.positions?.split(',').map((p: string) => p.trim()) || [];
+  const mainPos = positionsArr[0]?.toLowerCase() || "";
+
+  let previewRating = player.rating;
+  if (unappliedCount > 0) {
+    const byPos: Record<string, number[]> = { GK: [], DEF: [], MID: [], FWD: [] };
+    unappliedMatches.forEach((m: any) => {
+      const pos = m.position;
+      const earned = m.earnedRating;
+      if (pos === "Kaleci") byPos.GK.push(earned);
+      else if (pos === "Defans") byPos.DEF.push(earned);
+      else if (pos === "Orta Saha") byPos.MID.push(earned);
+      else byPos.FWD.push(earned);
+    });
+    const avgOf = (arr: number[], fallback: number) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : fallback;
+    const new_GK  = byPos.GK.length  > 0 ? avgOf(byPos.GK,  player.rating_GK)  : player.rating_GK;
+    const new_DEF = byPos.DEF.length > 0 ? avgOf(byPos.DEF, player.rating_DEF) : player.rating_DEF;
+    const new_MID = byPos.MID.length > 0 ? avgOf(byPos.MID, player.rating_MID) : player.rating_MID;
+    const new_FWD = byPos.FWD.length > 0 ? avgOf(byPos.FWD, player.rating_FWD) : player.rating_FWD;
+    if (mainPos.includes("kaleci") || mainPos.includes("gk")) previewRating = new_GK;
+    else if (mainPos.includes("defans") || mainPos.includes("stoper") || mainPos.includes("bek")) previewRating = new_DEF;
+    else if (mainPos.includes("forvet") || mainPos.includes("santrfor") || mainPos.includes("kanat")) previewRating = new_FWD;
+    else previewRating = new_MID;
+  }
+
   const modalContent = (
     <div className="modal-overlay">
       <div className="modal-content" style={{ maxWidth: "500px" }}>
@@ -157,11 +183,43 @@ export default function PlayerEditModal({ player }: { player: any }) {
 
           <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg flex flex-col gap-3">
             <div className="flex justify-between items-center">
-              <h3 className="font-bold text-blue-800 text-sm">İşlenmemiş Maç Puanları</h3>
+              <h3 className="font-bold text-blue-800 text-sm">Dağıtılmamış Maç Puanları</h3>
               <span className="bg-white text-blue-700 px-2 py-1 rounded text-xs font-bold border border-blue-100 shadow-sm">
-                Bekleyen Maç: {unappliedCount}
+                {unappliedCount} Maç
               </span>
             </div>
+
+            {/* Dağıtılmamış Maç Listesi */}
+            {unappliedCount > 0 ? (
+              <div className="flex flex-col gap-1.5 max-h-36 overflow-y-auto">
+                {unappliedMatches.map((m: any) => (
+                  <div key={m.id} className="flex justify-between items-center bg-white px-3 py-2 rounded-lg border border-blue-100 text-sm">
+                    <span className="text-slate-600 font-semibold">
+                      {m.match?.date ? new Date(m.match.date).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' }) : '-'}
+                      <span className="text-xs text-slate-400 ml-1.5 uppercase">{m.position}</span>
+                    </span>
+                    <span className="font-black text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-lg">{Math.ceil(m.earnedRating)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-blue-600 font-medium text-center py-1">Dağıtılacak bekleyen puan yok.</p>
+            )}
+
+            {/* Tahmini Yeni OVR */}
+            {unappliedCount > 0 && (
+              <div className="flex justify-between items-center bg-white border border-blue-200 px-4 py-2 rounded-xl shadow-sm">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Mevcut OVR</span>
+                  <span className="text-xl font-black text-slate-600">{Math.ceil(player.rating)}</span>
+                </div>
+                <span className="text-slate-300 font-black text-xl">→</span>
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-bold text-blue-500 uppercase">Yeni OVR (Tahmini)</span>
+                  <span className="text-xl font-black text-blue-700">{Math.ceil(previewRating)}</span>
+                </div>
+              </div>
+            )}
             
             <button 
               type="button" 
