@@ -10,17 +10,6 @@ import LiveVoteClient from "./LiveVoteClient";
 import AutoRefreshClient from "./AutoRefreshClient";
 import PitchView from "@/components/PitchView";
 
-async function getPlayerForm(playerId: string) {
-  const lastMatches = await prisma.matchPlayer.findMany({
-    where: { playerId, match: { status: "COMPLETED" }, earnedRating: { not: null } },
-    orderBy: { match: { date: "desc" } },
-    take: 3
-  });
-  if (lastMatches.length === 0) return 0;
-  const sum = lastMatches.reduce((acc, mp) => acc + (mp.earnedRating || 0), 0);
-  return sum / lastMatches.length;
-}
-
 export default async function PlayerDashboard() {
   const cookieStore = await cookies();
   const playerId = cookieStore.get("player_session")?.value;
@@ -37,8 +26,6 @@ export default async function PlayerDashboard() {
   if (!player) {
     redirect("/");
   }
-
-  const myFormScore = await getPlayerForm(player.id);
 
   // 2. Oyuncunun kadroda olduğu en yakın PENDING maçı bul
   const nextMatch = await prisma.match.findFirst({
@@ -72,12 +59,11 @@ export default async function PlayerDashboard() {
     };
 
     const enhanceAndSort = async (team: any[]) => {
-      const enhanced = await Promise.all(team.map(async p => {
-        const form = await getPlayerForm(p.id);
+      const enhanced = team.map(p => {
         const nextMp = nextMatch.players.find(mp => mp.playerId === p.id);
         const matchPosition = nextMp ? nextMp.position : p.positions.split(',')[0];
-        return { ...p, form, matchPosition };
-      }));
+        return { ...p, matchPosition };
+      });
       
       return enhanced.sort((a, b) => {
         const pA = getPosVal(a.matchPosition);
@@ -183,7 +169,7 @@ export default async function PlayerDashboard() {
 
   return (
     <div className="w-full flex flex-col p-4 sm:p-6 animate-fade-in pb-12 gap-8">
-      <AutoRefreshClient />
+      <AutoRefreshClient hasVoting={!!votingMatch} />
       {player.mustChangePassword && <ChangePasswordModal playerId={player.id} />}
       
       {/* Canlı Oylama Ekranı */}
@@ -221,15 +207,14 @@ export default async function PlayerDashboard() {
           </div>
         </div>
 
-        {/* Genel OVR ve Form Kartı */}
+        {/* Genel OVR Kartı */}
         <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center justify-between shadow-sm">
-          <div className="flex flex-col text-center items-center justify-center border-r border-slate-100 pr-6 w-1/2">
+          <div className="flex flex-col">
             <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider mb-1">Genel Güç</span>
             <span className="text-3xl font-black text-slate-800">{Math.ceil(player.rating)} <span className="text-sm font-bold text-slate-400">OVR</span></span>
           </div>
-          <div className="flex flex-col text-center items-center justify-center pl-6 w-1/2">
-            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-wider mb-1">Form (Son 3)</span>
-            <span className="text-3xl font-black text-slate-800">{myFormScore > 0 ? Math.ceil(myFormScore) : '-'} <span className="text-sm font-bold text-slate-400">AVG</span></span>
+          <div className="w-12 h-12 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-center text-amber-500 font-black text-xl shadow-sm">
+            ★
           </div>
         </div>
       </div>
@@ -354,10 +339,6 @@ export default async function PlayerDashboard() {
                         <span className={`text-[8px] uppercase font-bold ${p.id === player.id ? 'text-blue-200' : 'text-amber-500'}`}>OVR</span>
                         <span className="text-xs font-black">{Math.ceil(p.rating)}</span>
                       </div>
-                      <div className={`flex flex-col items-center pl-3 border-l ${p.id === player.id ? 'border-blue-500/50' : 'border-slate-100'}`}>
-                        <span className={`text-[8px] uppercase font-bold ${p.id === player.id ? 'text-blue-200' : 'text-emerald-500'}`}>Form</span>
-                        <span className="text-xs font-black">{p.form > 0 ? Math.ceil(p.form) : '-'}</span>
-                      </div>
                     </div>
                   </div>
                 ))}
@@ -365,15 +346,9 @@ export default async function PlayerDashboard() {
                 {/* Takım A Toplamlar */}
                 <div className="flex justify-between items-center px-3 py-2 mt-1 rounded-lg bg-blue-50 border border-blue-200">
                   <span className="text-xs font-black text-blue-900">Takım Toplamı</span>
-                  <div className="flex gap-4">
-                    <div className="flex flex-col items-center">
-                      <span className="text-[9px] font-bold text-blue-600">OVR</span>
-                      <span className="text-sm font-black text-blue-800">{teamA.reduce((sum, p) => sum + Math.ceil(p.rating), 0)}</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <span className="text-[9px] font-bold text-emerald-600">FORM</span>
-                      <span className="text-sm font-black text-emerald-700">{teamA.reduce((sum, p) => sum + (p.form > 0 ? Math.ceil(p.form) : 0), 0)}</span>
-                    </div>
+                  <div className="flex flex-col items-center">
+                    <span className="text-[9px] font-bold text-blue-600">OVR</span>
+                    <span className="text-sm font-black text-blue-800">{teamA.reduce((sum, p) => sum + Math.ceil(p.rating), 0)}</span>
                   </div>
                 </div>
               </div>
@@ -392,10 +367,6 @@ export default async function PlayerDashboard() {
                         <span className={`text-[8px] uppercase font-bold ${p.id === player.id ? 'text-red-200' : 'text-amber-500'}`}>OVR</span>
                         <span className="text-xs font-black">{Math.ceil(p.rating)}</span>
                       </div>
-                      <div className={`flex flex-col items-center pl-3 border-l ${p.id === player.id ? 'border-red-500/50' : 'border-slate-100'}`}>
-                        <span className={`text-[8px] uppercase font-bold ${p.id === player.id ? 'text-red-200' : 'text-emerald-500'}`}>Form</span>
-                        <span className="text-xs font-black">{p.form > 0 ? Math.ceil(p.form) : '-'}</span>
-                      </div>
                     </div>
                   </div>
                 ))}
@@ -403,15 +374,9 @@ export default async function PlayerDashboard() {
                 {/* Takım B Toplamlar */}
                 <div className="flex justify-between items-center px-3 py-2 mt-1 rounded-lg bg-red-50 border border-red-200">
                   <span className="text-xs font-black text-red-900">Takım Toplamı</span>
-                  <div className="flex gap-4">
-                    <div className="flex flex-col items-center">
-                      <span className="text-[9px] font-bold text-red-600">OVR</span>
-                      <span className="text-sm font-black text-red-800">{teamB.reduce((sum, p) => sum + Math.ceil(p.rating), 0)}</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <span className="text-[9px] font-bold text-emerald-600">FORM</span>
-                      <span className="text-sm font-black text-emerald-700">{teamB.reduce((sum, p) => sum + (p.form > 0 ? Math.ceil(p.form) : 0), 0)}</span>
-                    </div>
+                  <div className="flex flex-col items-center">
+                    <span className="text-[9px] font-bold text-red-600">OVR</span>
+                    <span className="text-sm font-black text-red-800">{teamB.reduce((sum, p) => sum + Math.ceil(p.rating), 0)}</span>
                   </div>
                 </div>
               </div>
