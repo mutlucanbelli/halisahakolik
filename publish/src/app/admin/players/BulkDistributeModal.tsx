@@ -63,8 +63,12 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
     })
     .filter(Boolean);
 
+  // YENİ OVERALL'A GÖRE EN YÜKSEKTEN EN DÜŞÜĞE SIRALA
+  const sortedPendingPlayers = [...pendingPlayers].sort((a: any, b: any) => b.previewCeil - a.previewCeil);
+
   const totalMatches = pendingPlayers.reduce((sum, p) => sum + (p?.unappliedCount || 0), 0);
   const totalIncreaseCount = pendingPlayers.filter(p => (p?.diff ?? 0) > 0).length;
+  const totalDecreaseCount = pendingPlayers.filter(p => (p?.diff ?? 0) < 0).length;
 
   const handleBulkDistribute = async () => {
     setLoading(true);
@@ -87,12 +91,12 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
         justifyContent: "center",
         padding: "1.25rem",
         paddingTop: "4vh",
-        backgroundColor: "rgba(15, 23, 42, 0.65)",
+        backgroundColor: "rgba(15, 23, 42, 0.7)",
         backdropFilter: "blur(8px)"
       }}
       onClick={(e) => { if (e.target === e.currentTarget) setIsOpen(false); }}
     >
-      <div className="bg-white w-full max-w-lg rounded-[28px] shadow-2xl overflow-hidden flex flex-col max-h-[88vh] border border-slate-100 animate-fade-in">
+      <div className="bg-white w-full max-w-lg rounded-[28px] shadow-2xl overflow-hidden flex flex-col max-h-[88vh] border border-slate-200 animate-fade-in">
         
         {/* Header Hero Banner */}
         <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 p-6 text-white relative overflow-hidden shrink-0">
@@ -105,7 +109,7 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
               </div>
               <h2 className="text-2xl font-black tracking-tight text-white">Yeni OVR Dağıtımı</h2>
               <p className="text-xs text-slate-300 mt-1 font-medium">
-                En az 2 tamamlanmış maçı olan oyuncular için yeni reytingler.
+                Yeni OVR sıralamasına göre yüksekten düşüğe dizilmiştir.
               </p>
             </div>
             
@@ -118,52 +122,52 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
             </button>
           </div>
 
-          {/* Stat Cards Row */}
-          {pendingPlayers.length > 0 && (
+          {/* Stat Cards Row: Hazır Oyuncu - Yükselen OVR - Azalan OVR */}
+          {sortedPendingPlayers.length > 0 && (
             <div className="grid grid-cols-3 gap-2 mt-5 relative z-10">
               <div className="bg-white/10 backdrop-blur-md border border-white/10 p-2.5 rounded-xl flex flex-col items-center text-center">
                 <span className="text-[9px] font-bold text-slate-300 uppercase tracking-wider">Hazır Oyuncu</span>
-                <span className="text-xl font-black text-white mt-0.5">{pendingPlayers.length}</span>
+                <span className="text-xl font-black text-white mt-0.5">{sortedPendingPlayers.length}</span>
               </div>
               <div className="bg-white/10 backdrop-blur-md border border-white/10 p-2.5 rounded-xl flex flex-col items-center text-center">
-                <span className="text-[9px] font-bold text-slate-300 uppercase tracking-wider">İşlenecek Maç</span>
-                <span className="text-xl font-black text-blue-300 mt-0.5">{totalMatches}</span>
+                <span className="text-[9px] font-bold text-emerald-300 uppercase tracking-wider">Yükselen OVR</span>
+                <span className="text-xl font-black text-emerald-400 mt-0.5">{totalIncreaseCount}</span>
               </div>
               <div className="bg-white/10 backdrop-blur-md border border-white/10 p-2.5 rounded-xl flex flex-col items-center text-center">
-                <span className="text-[9px] font-bold text-slate-300 uppercase tracking-wider">Yükselen OVR</span>
-                <span className="text-xl font-black text-emerald-400 mt-0.5">{totalIncreaseCount} Oyuncu</span>
+                <span className="text-[9px] font-bold text-rose-300 uppercase tracking-wider">Azalan OVR</span>
+                <span className="text-xl font-black text-rose-400 mt-0.5">{totalDecreaseCount}</span>
               </div>
             </div>
           )}
         </div>
 
-        {/* Body List */}
-        <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-3 bg-slate-50/50">
-          {pendingPlayers.length > 0 ? (
+        {/* Body List - Sorted By Preview OVR Descending */}
+        <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-3 bg-slate-100/70">
+          {sortedPendingPlayers.length > 0 ? (
             <div className="flex flex-col gap-2.5">
-              {pendingPlayers.map((item: any) => {
+              {sortedPendingPlayers.map((item: any) => {
                 const isUp = item.diff > 0;
                 const isDown = item.diff < 0;
 
                 return (
                   <div
                     key={item.player.id}
-                    className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center justify-between gap-3 group"
+                    className="p-4 bg-white border border-slate-200/90 rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center justify-between gap-3 group"
                   >
-                    {/* Oyuncu Bilgisi */}
+                    {/* Oyuncu Bilgisi - Net ve Okunabilir İsim */}
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-base text-white shrink-0 shadow-sm ${
+                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-lg text-white shrink-0 shadow-sm ${
                         item.player.positions?.includes("Kaleci") ? 'bg-purple-600' :
                         item.player.positions?.includes("Defans") ? 'bg-blue-600' :
                         item.player.positions?.includes("Forvet") ? 'bg-red-600' : 'bg-emerald-600'
                       }`}>
-                        {item.player.name.charAt(0)}
+                        {item.player.name.charAt(0).toUpperCase()}
                       </div>
 
                       <div className="flex flex-col min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-black text-sm text-slate-900 truncate">{item.player.name}</span>
-                          <span className="text-[9px] font-bold text-slate-400 uppercase bg-slate-100 px-1.5 py-0.5 rounded">
+                          <span className="font-black text-base text-slate-900 tracking-tight truncate">{item.player.name}</span>
+                          <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded uppercase">
                             {item.player.positions?.split(',')[0]}
                           </span>
                         </div>
@@ -194,7 +198,7 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
                         <ArrowRight size={12} className="text-slate-400 mx-0.5" />
 
                         <div className="flex flex-col items-center">
-                          <span className="text-[8px] font-bold text-slate-400 uppercase">Yeni</span>
+                          <span className="text-[8px] font-bold text-slate-400 uppercase">Yeni OVR</span>
                           <span className={`text-base font-black ${
                             isUp ? 'text-emerald-600' : isDown ? 'text-rose-600' : 'text-slate-800'
                           }`}>
@@ -204,7 +208,7 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
                       </div>
 
                       {/* Fark Rozeti */}
-                      <div className={`px-2.5 py-2 rounded-xl text-xs font-black flex items-center justify-center gap-1 border shadow-xs min-w-[50px] ${
+                      <div className={`px-2.5 py-2 rounded-xl text-xs font-black flex items-center justify-center gap-1 border shadow-xs min-w-[52px] ${
                         isUp
                           ? 'bg-emerald-500 border-emerald-600 text-white shadow-emerald-500/20'
                           : isDown
@@ -235,11 +239,11 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
         </div>
 
         {/* Footer Bar */}
-        {pendingPlayers.length > 0 && (
+        {sortedPendingPlayers.length > 0 && (
           <div className="p-5 border-t border-slate-200 bg-white flex flex-col gap-3 shrink-0">
             <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200">
               <ShieldAlert size={14} className="text-amber-500 shrink-0" />
-              <span>Onayladığınızda yukarıdaki {pendingPlayers.length} oyuncunun reytingleri kalıcı olarak güncellenir.</span>
+              <span>Onayladığınızda yukarıdaki {sortedPendingPlayers.length} oyuncunun yeni OVR değerleri kalıcı olarak güncellenir.</span>
             </div>
 
             <div className="flex gap-3">
@@ -268,7 +272,7 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
     </div>
   );
 
-  const pendingCount = pendingPlayers.length;
+  const pendingCount = sortedPendingPlayers.length;
 
   return (
     <>
@@ -314,4 +318,3 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
     </>
   );
 }
-
