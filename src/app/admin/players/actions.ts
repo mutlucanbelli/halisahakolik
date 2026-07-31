@@ -228,3 +228,77 @@ export async function reevaluatePlayer(playerId: string, type: 'gk' | 'outfield'
 
   revalidatePath("/admin/players");
 }
+
+export async function bulkReevaluateAll() {
+  const players = await prisma.player.findMany({
+    include: {
+      matches: {
+        where: {
+          isApplied: false,
+          earnedRating: { not: null },
+          match: { status: "COMPLETED" }
+        }
+      }
+    }
+  });
+
+  for (const player of players) {
+    if (player.matches.length === 0) continue;
+
+    const gkMatches = player.matches.filter(mp => mp.position === "Kaleci");
+    const outfieldMatches = player.matches.filter(mp => mp.position !== "Kaleci");
+
+    const avg = (arr: { earnedRating: number | null }[]) =>
+      arr.reduce((sum, mp) => sum + (mp.earnedRating || 0), 0) / arr.length;
+
+    const positionsArr = player.positions.split(',').map((p: string) => p.trim());
+    const mainPos = positionsArr[0]?.toLowerCase() || "";
+
+    let updateData: Record<string, number> = {};
+    let idsToMark: string[] = [];
+
+    if (gkMatches.length > 0) {
+      const newGK = avg(gkMatches);
+      updateData.rating_GK = newGK;
+      if (mainPos.includes("kaleci") || mainPos.includes("gk")) {
+        updateData.rating = newGK;
+      }
+      idsToMark.push(...gkMatches.map(mp => mp.id));
+    }
+
+    if (outfieldMatches.length > 0) {
+      const newOutfield = avg(outfieldMatches);
+      if (mainPos.includes("defans") || mainPos.includes("stoper") || mainPos.includes("bek")) {
+        updateData.rating_DEF = newOutfield;
+        updateData.rating = newOutfield;
+      } else if (mainPos.includes("forvet") || mainPos.includes("santrfor") || mainPos.includes("kanat")) {
+        updateData.rating_FWD = newOutfield;
+        updateData.rating = newOutfield;
+      } else if (mainPos.includes("kaleci") || mainPos.includes("gk")) {
+        updateData.rating_DEF = newOutfield;
+        updateData.rating_MID = newOutfield;
+        updateData.rating_FWD = newOutfield;
+      } else {
+        updateData.rating_MID = newOutfield;
+        updateData.rating = newOutfield;
+      }
+      idsToMark.push(...outfieldMatches.map(mp => mp.id));
+    }
+
+    if (Object.keys(updateData).length > 0 && idsToMark.length > 0) {
+      await prisma.$transaction([
+        prisma.player.update({
+          where: { id: player.id },
+          data: updateData
+        }),
+        prisma.matchPlayer.updateMany({
+          where: { id: { in: idsToMark } },
+          data: { isApplied: true }
+        })
+      ]);
+    }
+  }
+
+  revalidatePath("/admin/players");
+}
+

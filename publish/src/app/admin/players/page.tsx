@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import PlayerForm from "./PlayerForm";
 import PlayerListClient from "./PlayerListClient";
+import BulkDistributeModal from "./BulkDistributeModal";
 
 export default async function PlayersPage() {
   const players = await prisma.player.findMany({
@@ -15,7 +16,8 @@ export default async function PlayersPage() {
           <h1 className="text-3xl font-black text-black tracking-tight">Oyuncular</h1>
           <p className="text-sm text-gray-500 font-medium">Sistemdeki tüm kayıtlı oyuncular ({players.length})</p>
         </div>
-        <div className="w-full sm:w-auto flex items-center gap-2">
+        <div className="w-full sm:w-auto flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <BulkDistributeModal players={players as any} />
           <PlayerForm />
         </div>
       </div>
