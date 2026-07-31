@@ -183,7 +183,7 @@ export default async function PlayerDashboard() {
 
   return (
     <div className="w-full flex flex-col p-4 sm:p-6 animate-fade-in pb-12 gap-8">
-      <AutoRefreshClient />
+      <AutoRefreshClient hasVoting={!!votingMatch} />
       {player.mustChangePassword && <ChangePasswordModal playerId={player.id} />}
       
       {/* Canlı Oylama Ekranı */}

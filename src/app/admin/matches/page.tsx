@@ -131,7 +131,7 @@ export default async function MatchesPage() {
                       {!timePassed ? (
                         <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
                           <Clock size={14} className="text-orange-500" />
-                          Oylama {new Date(matchTime + 60*60*1000).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})}'de açılabilir
+                          Oylama maç saatinde ({match.date.toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})}) açılabilir
                         </div>
                       ) : (
                         <form action={async () => { "use server"; await startVoting(match.id); }}>
