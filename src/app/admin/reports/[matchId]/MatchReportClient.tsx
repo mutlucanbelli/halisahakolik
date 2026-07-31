@@ -1,12 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, X, ChevronUp, ChevronDown, Minus, User, ArrowRight } from "lucide-react";
+
+// Body scroll'u kilitle/aç
+function useBodyScrollLock(isLocked: boolean) {
+  useEffect(() => {
+    if (isLocked) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflowY = 'scroll';
+    } else {
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflowY = '';
+      window.scrollTo(0, parseInt(scrollY || '0') * -1);
+    }
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflowY = '';
+    };
+  }, [isLocked]);
+}
 
 export default function MatchReportClient({ match }: { match: any }) {
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
   const [viewMode, setViewMode] = useState<"received" | "given">("received");
+
+  // Modal açıkken body scroll'u kilitle
+  useBodyScrollLock(!!selectedPlayer);
 
   const teamA = match.players.filter((mp: any) => mp.team === 'A');
   const teamB = match.players.filter((mp: any) => mp.team === 'B');
@@ -17,6 +46,8 @@ export default function MatchReportClient({ match }: { match: any }) {
     setSelectedPlayer({ ...mp, votesReceived, votesGiven });
     setViewMode("received");
   };
+
+  const closeModal = () => setSelectedPlayer(null);
 
   return (
     <div className="w-full flex flex-col gap-6 animate-fade-in pb-24 max-w-lg mx-auto">
@@ -140,12 +171,24 @@ export default function MatchReportClient({ match }: { match: any }) {
         </div>
       )}
 
-      {/* ====== PLAYER DETAILS MODAL - EKRANIN TAM ORTASINDA ====== */}
+      {/* PLAYER DETAILS MODAL */}
       {selectedPlayer && (
         <div
-          className="fixed z-[9999] bg-black/50 backdrop-blur-sm"
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
-          onClick={(e) => { if (e.target === e.currentTarget) setSelectedPlayer(null); }}
+          onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            backdropFilter: 'blur(4px)',
+          }}
         >
           <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
             
@@ -165,7 +208,7 @@ export default function MatchReportClient({ match }: { match: any }) {
                   <span className="text-[9px] font-bold text-amber-500 uppercase">Not</span>
                   <span className="text-lg font-black text-amber-700">{selectedPlayer.earnedRating ? Math.ceil(selectedPlayer.earnedRating) : '-'}</span>
                 </div>
-                <button onClick={() => setSelectedPlayer(null)} className="p-2 bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 transition-colors ml-1">
+                <button onClick={() => closeModal()} className="p-2 bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 transition-colors ml-1">
                   <X size={18} />
                 </button>
               </div>

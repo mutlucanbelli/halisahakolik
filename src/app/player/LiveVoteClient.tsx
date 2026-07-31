@@ -1,8 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { submitLiveVote } from "@/app/actions";
 import { CheckCircle, Zap, Send } from "lucide-react";
+
+// Modal açıkken body scroll'u kilitler, kapanınca eski haline getirir
+function useBodyScrollLock(isLocked: boolean) {
+  useEffect(() => {
+    if (isLocked) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflowY = 'scroll';
+    } else {
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflowY = '';
+      window.scrollTo(0, parseInt(scrollY || '0') * -1);
+    }
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflowY = '';
+    };
+  }, [isLocked]);
+}
 
 interface TargetPlayer {
   id: string;
@@ -24,10 +50,28 @@ export default function LiveVoteClient({
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  // Oy verildi durumu (ya daha önce oy verdiyse ya da yeni gönderdiyse)
+  // Her zaman modal açık (oylama aktifse) — body scroll kilitle
+  useBodyScrollLock(true);
+
+  const overlayStyle = {
+    position: 'fixed' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 9999,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '1rem',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    backdropFilter: 'blur(6px)',
+  };
+
+  // Oy verildi durumu
   if (hasVoted || submitted) {
     return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div style={overlayStyle}>
         <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col items-center text-center p-8 border-4 border-emerald-400 animate-fade-in">
           <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mb-4">
             <CheckCircle size={40} />
@@ -49,11 +93,11 @@ export default function LiveVoteClient({
     setLoading(true);
     await submitLiveVote(matchId, voterId, target.id, rating);
     setLoading(false);
-    setSubmitted(true); // Sayfayı yenilemek yerine anında "Gönderildi" göster
+    setSubmitted(true);
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div style={overlayStyle}>
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col items-center text-center p-8 border-4 border-amber-400">
         
         <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center text-amber-500 mb-4 animate-bounce">
