@@ -151,11 +151,11 @@ export async function resetPlayerStats(id: string) {
   revalidatePath("/admin/players");
 }
 
-export async function reevaluatePlayer(playerId: string) {
+export async function reevaluatePlayer(playerId: string, type: 'gk' | 'outfield') {
   const player = await prisma.player.findUnique({ where: { id: playerId } });
   if (!player) return;
 
-  // Sadece işlenmemiş, tamamlanmış maçları bul
+  // Dağıtılmamış, tamamlanmış tüm maçları getir
   const unappliedMatches = await prisma.matchPlayer.findMany({
     where: { 
       playerId, 
@@ -167,61 +167,61 @@ export async function reevaluatePlayer(playerId: string) {
 
   if (unappliedMatches.length === 0) return;
 
-  // Her mevki için o mevkide oynanan maçların saf ortalamasını hesapla
-  const byPos: Record<string, number[]> = {
-    GK: [], DEF: [], MID: [], FWD: []
-  };
+  // Maçları GK ve outfield olarak ayır
+  const gkMatches = unappliedMatches.filter(mp => mp.position === "Kaleci");
+  const outfieldMatches = unappliedMatches.filter(mp => mp.position !== "Kaleci");
 
-  for (const mp of unappliedMatches) {
-    const pos = mp.position;
-    const earned = mp.earnedRating!;
-    if (pos === "Kaleci") byPos.GK.push(earned);
-    else if (pos === "Defans") byPos.DEF.push(earned);
-    else if (pos === "Orta Saha") byPos.MID.push(earned);
-    else if (pos === "Forvet" || pos === "Kanat") byPos.FWD.push(earned);
-    else {
-      // Bilinmeyen mevki - ana mevkiye ekle
-      byPos.MID.push(earned);
-    }
-  }
+  const avg = (arr: { earnedRating: number | null }[]) =>
+    arr.reduce((sum, mp) => sum + (mp.earnedRating || 0), 0) / arr.length;
 
-  const avg = (arr: number[], fallback: number) =>
-    arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : fallback;
-
-  // Sadece o mevkide maç oynanmışsa güncelle, oynanmamışsa mevcut değeri koru
-  const new_GK  = byPos.GK.length  > 0 ? avg(byPos.GK,  player.rating_GK)  : player.rating_GK;
-  const new_DEF = byPos.DEF.length > 0 ? avg(byPos.DEF, player.rating_DEF) : player.rating_DEF;
-  const new_MID = byPos.MID.length > 0 ? avg(byPos.MID, player.rating_MID) : player.rating_MID;
-  const new_FWD = byPos.FWD.length > 0 ? avg(byPos.FWD, player.rating_FWD) : player.rating_FWD;
-
-  // Genel OVR = ana mevkinin yeni puanı
   const positionsArr = player.positions.split(',').map((p: string) => p.trim());
   const mainPos = positionsArr[0]?.toLowerCase() || "";
-  let newRating: number;
-  if (mainPos.includes("kaleci") || mainPos.includes("gk")) newRating = new_GK;
-  else if (mainPos.includes("defans") || mainPos.includes("stoper") || mainPos.includes("bek")) newRating = new_DEF;
-  else if (mainPos.includes("forvet") || mainPos.includes("santrfor") || mainPos.includes("kanat")) newRating = new_FWD;
-  else newRating = new_MID;
+
+  let updateData: Record<string, number> = {};
+  let idsToMark: string[] = [];
+
+  if (type === 'gk' && gkMatches.length > 0) {
+    // Sadece kaleci maçlarının ortalaması → rating_GK
+    const newGK = avg(gkMatches);
+    updateData.rating_GK = newGK;
+    // Eğer ana mevki kaleci ise genel OVR'yi de güncelle
+    if (mainPos.includes("kaleci") || mainPos.includes("gk")) {
+      updateData.rating = newGK;
+    }
+    idsToMark = gkMatches.map(mp => mp.id);
+
+  } else if (type === 'outfield' && outfieldMatches.length > 0) {
+    // Mevki fark etmeksizin tüm outfield maçların tek ortalaması
+    const newOutfield = avg(outfieldMatches);
+    // Ana mevkiye göre hangi rating alanı güncelleneceğini belirle
+    if (mainPos.includes("defans") || mainPos.includes("stoper") || mainPos.includes("bek")) {
+      updateData.rating_DEF = newOutfield;
+      updateData.rating = newOutfield;
+    } else if (mainPos.includes("forvet") || mainPos.includes("santrfor") || mainPos.includes("kanat")) {
+      updateData.rating_FWD = newOutfield;
+      updateData.rating = newOutfield;
+    } else if (mainPos.includes("kaleci") || mainPos.includes("gk")) {
+      // Ana mevki kaleci ama outfield de oynamış: diğer rating'leri güncelle ama genel OVR'yi dokunma
+      updateData.rating_DEF = newOutfield;
+      updateData.rating_MID = newOutfield;
+      updateData.rating_FWD = newOutfield;
+    } else {
+      // Orta saha varsayılan
+      updateData.rating_MID = newOutfield;
+      updateData.rating = newOutfield;
+    }
+    idsToMark = outfieldMatches.map(mp => mp.id);
+  } else {
+    return; // Dağıtılacak uygun maç yok
+  }
 
   await prisma.$transaction([
     prisma.player.update({
       where: { id: playerId },
-      data: {
-        rating_GK: new_GK,
-        rating_DEF: new_DEF,
-        rating_MID: new_MID,
-        rating_FWD: new_FWD,
-        rating: newRating
-      }
+      data: updateData
     }),
-    // MatchPlayer kayıtlarını "İşlendi" olarak işaretle
     prisma.matchPlayer.updateMany({
-      where: { 
-        playerId, 
-        isApplied: false,
-        earnedRating: { not: null },
-        match: { status: "COMPLETED" } 
-      },
+      where: { id: { in: idsToMark } },
       data: { isApplied: true }
     })
   ]);
