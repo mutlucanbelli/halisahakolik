@@ -272,20 +272,46 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
 
   return (
     <>
-      <button
+      <div
         onClick={() => setIsOpen(true)}
-        className="flex items-center justify-center gap-2 h-[44px] px-4 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 text-white hover:from-slate-800 hover:to-slate-700 transition-all font-bold text-xs shadow-md active:scale-95 border border-slate-700 relative group"
+        className="w-full bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 rounded-2xl p-4 sm:p-5 text-white shadow-lg border border-slate-800 relative overflow-hidden flex items-center justify-between group cursor-pointer active:scale-[0.99] transition-all"
       >
-        <RefreshCw size={14} className="text-blue-400 group-hover:rotate-180 transition-transform duration-500" />
-        <span>Toplu Puan Dağıt</span>
-        {pendingCount > 0 && (
-          <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full border border-slate-900 animate-pulse shadow-sm">
-            {pendingCount}
-          </span>
-        )}
-      </button>
+        {/* Ambient Glow */}
+        <div className="absolute top-0 right-0 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div className="flex items-center gap-3.5 z-10 min-w-0">
+          <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-400 shrink-0 group-hover:scale-105 transition-transform shadow-inner">
+            <RefreshCw size={22} className="group-hover:rotate-180 transition-transform duration-700 text-blue-300" />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-black text-sm sm:text-base text-white tracking-tight">Toplu Puan Dağıtımı</span>
+              {pendingCount > 0 ? (
+                <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-sm">
+                  {pendingCount} Oyuncu Hazır
+                </span>
+              ) : (
+                <span className="bg-white/10 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/10">
+                  Güncel
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-300 font-medium mt-0.5 truncate">
+              {pendingCount > 0
+                ? `${totalMatches} tamamlanmış maç puanı OVR değerlerine aktarılmayı bekliyor`
+                : 'Dağıtılacak bekleyen maç puanı bulunmuyor'}
+            </p>
+          </div>
+        </div>
+
+        <div className="z-10 bg-white/10 group-hover:bg-white/20 px-3 py-2 rounded-xl text-xs font-bold text-white border border-white/10 transition-colors shrink-0 flex items-center gap-1.5 ml-2">
+          <span>İncele</span>
+          <ArrowRight size={14} />
+        </div>
+      </div>
 
       {mounted && isOpen && createPortal(modalContent, document.body)}
     </>
   );
 }
+
