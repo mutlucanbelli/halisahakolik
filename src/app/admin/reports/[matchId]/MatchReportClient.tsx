@@ -2,13 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronUp, ChevronDown, Minus, ArrowRight, Target, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronUp, ChevronDown, Minus, ArrowRight, Target } from "lucide-react";
 
 export default function MatchReportClient({ match }: { match: any }) {
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
-
-  const teamA = match.players.filter((mp: any) => mp.team === 'A');
-  const teamB = match.players.filter((mp: any) => mp.team === 'B');
 
   const toggleExpand = (id: string) => {
     setExpandedIds(prev =>
@@ -66,38 +63,9 @@ export default function MatchReportClient({ match }: { match: any }) {
         </div>
       </div>
 
-      {/* Teams Container */}
-      <div className="flex flex-col gap-6 mt-2">
-        {/* Team A */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-            <h3 className="font-black text-blue-900 text-sm uppercase tracking-wider">Takım A (Mavi)</h3>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {teamA.map((mp: any) => (
-              <PlayerCard key={mp.id} mp={mp} />
-            ))}
-          </div>
-        </div>
-
-        {/* Team B */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="w-3 h-3 rounded-full bg-red-500"></span>
-            <h3 className="font-black text-red-900 text-sm uppercase tracking-wider">Takım B (Kırmızı)</h3>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {teamB.map((mp: any) => (
-              <PlayerCard key={mp.id} mp={mp} />
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* ======= OY ANALİZİ (Açılır-Kapanır Akordiyon Tasarımı) ======= */}
       {match.votes?.length > 0 && (
-        <div className="mt-4 flex flex-col gap-3">
+        <div className="mt-2 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-black text-slate-900 tracking-tight">Oy Analizi</h2>
@@ -203,7 +171,7 @@ export default function MatchReportClient({ match }: { match: any }) {
                                           ? 'bg-rose-50 border-rose-200 text-rose-800 font-bold'
                                           : isClosest
                                           ? 'bg-blue-50 border-blue-200 text-blue-800 font-bold'
-                                          : 'bg-slate-50 border-slate-200 text-slate-700'
+                                          : 'bg-white border-slate-200 text-slate-700'
                                       }`}
                                     >
                                       {isMax && <ChevronUp size={12} className="text-emerald-600" />}
@@ -258,7 +226,7 @@ export default function MatchReportClient({ match }: { match: any }) {
                                           ? 'bg-rose-50 border-rose-200 text-rose-800'
                                           : isClosest
                                           ? 'bg-purple-50 border-purple-200 text-purple-800'
-                                          : 'bg-slate-50 border-slate-200 text-slate-700'
+                                          : 'bg-white border-slate-200 text-slate-700'
                                       }`}
                                     >
                                       <span className={`w-2 h-2 rounded-full ${targetMp?.team === 'A' ? 'bg-blue-500' : 'bg-red-500'}`} />
@@ -282,19 +250,6 @@ export default function MatchReportClient({ match }: { match: any }) {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function PlayerCard({ mp }: { mp: any }) {
-  const rating = mp.earnedRating ? Math.ceil(mp.earnedRating) : "?";
-  return (
-    <div className="flex flex-col items-center justify-center bg-white border border-gray-200 p-4 rounded-2xl shadow-sm">
-      <span className="font-bold text-gray-800 text-sm text-center mb-1">{mp.player.name}</span>
-      <span className="text-[10px] text-gray-400 font-semibold uppercase mb-3">{mp.position}</span>
-      <div className="w-10 h-10 rounded-full bg-gray-50 border-2 border-gray-100 flex items-center justify-center font-black text-lg text-gray-700">
-        {rating}
-      </div>
     </div>
   );
 }
