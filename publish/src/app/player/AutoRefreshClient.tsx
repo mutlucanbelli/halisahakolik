@@ -2,16 +2,18 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-export default function AutoRefreshClient() {
+// Sadece oylama aktifken (hasVoting=true) ve daha sık yenilensin
+export default function AutoRefreshClient({ hasVoting }: { hasVoting?: boolean }) {
   const router = useRouter();
 
   useEffect(() => {
+    // Oylama yoksa 20 saniye, varsa 8 saniyede bir yenile
     const interval = setInterval(() => {
       router.refresh();
-    }, 5000); // 5 saniyede bir sayfayı arkaplanda yeniler (sunucu verilerini çeker)
+    }, hasVoting ? 8000 : 20000);
     
     return () => clearInterval(interval);
-  }, [router]);
+  }, [router, hasVoting]);
 
   return null;
 }

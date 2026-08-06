@@ -9,7 +9,13 @@ export default async function PlayerDetailsPage({ params }: { params: Promise<{ 
   const { playerId } = await params;
 
   const player = await prisma.player.findUnique({
-    where: { id: playerId }
+    where: { id: playerId },
+    include: {
+      matches: {
+        include: { match: { select: { status: true, date: true } } },
+        orderBy: { match: { date: "desc" } }
+      }
+    }
   });
 
   if (!player) {

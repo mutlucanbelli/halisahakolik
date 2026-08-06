@@ -43,15 +43,13 @@ export default async function MatchesPage() {
           const teamB = match.players.filter((mp: any) => mp.team === 'B');
           
           const getMatchRating = (mp: any) => {
-            const pos = mp.position;
-            if (pos === "Kaleci") return mp.player.rating_GK;
-            if (pos === "Defans") return mp.player.rating_DEF;
-            if (pos === "Orta Saha") return mp.player.rating_MID;
-            if (pos === "Forvet" || pos === "Kanat") return mp.player.rating_FWD;
+            const pos = (mp.position || "").toLowerCase();
+            if (pos.includes("kaleci") || pos.includes("gk")) return mp.player.rating_GK;
+            if (pos.includes("defans") || pos.includes("stoper") || pos.includes("bek")) return mp.player.rating_DEF;
+            if (pos.includes("forvet") || pos.includes("santrfor") || pos.includes("kanat")) return mp.player.rating_FWD;
+            if (pos.includes("orta saha") || pos.includes("mid")) return mp.player.rating_MID;
             return mp.player.rating;
-          };
-
-          const teamAAvg = teamA.length > 0 ? Math.ceil(teamA.reduce((acc: number, mp: any) => acc + getMatchRating(mp), 0) / teamA.length) : "0";
+          }; const teamAAvg = teamA.length > 0 ? Math.ceil(teamA.reduce((acc: number, mp: any) => acc + getMatchRating(mp), 0) / teamA.length) : "0";
           const teamBAvg = teamB.length > 0 ? Math.ceil(teamB.reduce((acc: number, mp: any) => acc + getMatchRating(mp), 0) / teamB.length) : "0";
           
           const matchTime = match.date.getTime();
@@ -131,7 +129,7 @@ export default async function MatchesPage() {
                       {!timePassed ? (
                         <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
                           <Clock size={14} className="text-orange-500" />
-                          Oylama {new Date(matchTime + 60*60*1000).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})}'de açılabilir
+                          Oylama maç saatinde ({match.date.toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})}) açılabilir
                         </div>
                       ) : (
                         <form action={async () => { "use server"; await startVoting(match.id); }}>

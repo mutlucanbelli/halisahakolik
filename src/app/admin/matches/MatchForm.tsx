@@ -39,17 +39,27 @@ export default function MatchForm({ players }: { players: any[] }) {
   const generateDraft = () => {
     if (!dateStr || !hourStr || selectedIds.length === 0) return;
 
-    const selectedPlayers = players
-      .filter(p => selectedIds.includes(p.id))
-      .map(p => ({ ...p, positions: selectedPositions[p.id] || p.positions.split(',')[0].trim() }));
-
-    const getPosRating = (p: any) => {
-      const pos = (p.positions || "").toLowerCase();
+    const getPosRating = (p: any, posOverride?: string) => {
+      const pos = (posOverride || p.positions || "").toLowerCase();
       if (pos.includes("kaleci") || pos.includes("gk")) return p.rating_GK;
       if (pos.includes("defans") || pos.includes("stoper") || pos.includes("bek")) return p.rating_DEF;
       if (pos.includes("forvet") || pos.includes("santrfor") || pos.includes("kanat")) return p.rating_FWD;
-      return p.rating_MID;
+      if (pos.includes("orta saha") || pos.includes("mid")) return p.rating_MID;
+      return p.rating;
     };
+
+    const selectedPlayers = players
+      .filter(p => selectedIds.includes(p.id))
+      .map(p => {
+        const chosenPos = selectedPositions[p.id] || p.positions.split(',')[0].trim();
+        const chosenRating = getPosRating(p, chosenPos);
+        return {
+          ...p,
+          positions: chosenPos,
+          matchPosition: chosenPos,
+          rating: chosenRating
+        };
+      });
 
     const getPosCategory = (pos: string) => {
       const p = (pos || "").toLowerCase();
@@ -175,12 +185,13 @@ export default function MatchForm({ players }: { players: any[] }) {
     setShowPreview(true);
   };
 
-  const getPosRating = (p: any) => {
-    const pos = (p.positions || "").toLowerCase();
+  const getPosRating = (p: any, posOverride?: string) => {
+    const pos = (posOverride || p.matchPosition || p.positions || "").toLowerCase();
     if (pos.includes("kaleci") || pos.includes("gk")) return p.rating_GK;
     if (pos.includes("defans") || pos.includes("stoper") || pos.includes("bek")) return p.rating_DEF;
     if (pos.includes("forvet") || pos.includes("santrfor") || pos.includes("kanat")) return p.rating_FWD;
-    return p.rating_MID;
+    if (pos.includes("orta saha") || pos.includes("mid")) return p.rating_MID;
+    return p.rating;
   };
 
   const swapToB = (player: any) => {
@@ -349,21 +360,27 @@ export default function MatchForm({ players }: { players: any[] }) {
               <div key={p.id} className={`flex flex-col gap-2 p-3 rounded-xl border transition-colors ${
                 isSelected ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-100 hover:bg-slate-50'
               }`}>
-                <div className="flex items-center gap-3">
-                  <input 
-                    type="checkbox" 
-                    checked={isSelected}
-                    onChange={() => togglePlayer(p.id, defaultPos)}
-                    className="w-5 h-5 accent-emerald-500 cursor-pointer" 
-                  />
-                  <div className="flex-1 flex flex-col cursor-pointer" onClick={() => togglePlayer(p.id, defaultPos)}>
-                    <span className={`font-bold text-sm ${isSelected ? 'text-emerald-800' : 'text-slate-700'}`}>{p.name}</span>
-                    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{p.positions}</span>
-                  </div>
-                  <span className="text-xs font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded shadow-sm border border-slate-200">
-                    OVR {Math.ceil(p.rating)}
-                  </span>
-                </div>
+                {(() => {
+                  const activePos = isSelected ? (selectedPositions[p.id] || defaultPos) : defaultPos;
+                  const activeRating = getPosRating(p, activePos);
+                  return (
+                    <div className="flex items-center gap-3">
+                      <input 
+                        type="checkbox" 
+                        checked={isSelected}
+                        onChange={() => togglePlayer(p.id, defaultPos)}
+                        className="w-5 h-5 accent-emerald-500 cursor-pointer" 
+                      />
+                      <div className="flex-1 flex flex-col cursor-pointer" onClick={() => togglePlayer(p.id, defaultPos)}>
+                        <span className={`font-bold text-sm ${isSelected ? 'text-emerald-800' : 'text-slate-700'}`}>{p.name}</span>
+                        <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{p.positions}</span>
+                      </div>
+                      <span className="text-xs font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded shadow-sm border border-slate-200">
+                        OVR {Math.ceil(activeRating)}
+                      </span>
+                    </div>
+                  );
+                })()}
                 
                 {/* Mevki Seçimi (Yalnızca Seçiliyse) */}
                 {isSelected && (

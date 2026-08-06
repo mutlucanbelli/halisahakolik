@@ -58,11 +58,21 @@ export default async function PlayerDashboard() {
       return 4; // forvet
     };
 
+    const getPosRating = (p: any, matchPosition: string) => {
+      const pos = (matchPosition || "").toLowerCase();
+      if (pos.includes("kaleci") || pos.includes("gk")) return p.rating_GK;
+      if (pos.includes("defans") || pos.includes("stoper") || pos.includes("bek")) return p.rating_DEF;
+      if (pos.includes("forvet") || pos.includes("santrfor") || pos.includes("kanat")) return p.rating_FWD;
+      if (pos.includes("orta saha") || pos.includes("mid")) return p.rating_MID;
+      return p.rating;
+    };
+
     const enhanceAndSort = async (team: any[]) => {
       const enhanced = team.map(p => {
         const nextMp = nextMatch.players.find(mp => mp.playerId === p.id);
         const matchPosition = nextMp ? nextMp.position : p.positions.split(',')[0];
-        return { ...p, matchPosition };
+        const matchRating = getPosRating(p, matchPosition);
+        return { ...p, matchPosition, rating: matchRating };
       });
       
       return enhanced.sort((a, b) => {
