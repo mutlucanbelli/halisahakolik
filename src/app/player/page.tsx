@@ -27,11 +27,10 @@ export default async function PlayerDashboard() {
     redirect("/");
   }
 
-  // 2. Oyuncunun kadroda olduğu en yakın PENDING maçı bul
+  // 2. Bekleyen en yakın maçı bul (Oyuncunun kadroda olup olmadığına bakılmaksızın)
   const nextMatch = await prisma.match.findFirst({
     where: { 
-      status: { in: ["PENDING", "VOTING"] },
-      players: { some: { playerId: player.id } }
+      status: { in: ["PENDING", "VOTING"] }
     },
     orderBy: { date: "asc" },
     include: {
@@ -302,11 +301,11 @@ export default async function PlayerDashboard() {
         )}
       </section>
 
-      {/* Sıradaki Maçım */}
+      {/* Sıradaki Maç */}
       <section className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <Clock className="text-amber-500" size={20} />
-          <h2 className="text-lg font-bold text-slate-800 tracking-tight">Sıradaki Maçım</h2>
+          <h2 className="text-lg font-bold text-slate-800 tracking-tight">Sıradaki Maç</h2>
         </div>
         
         {nextMatch ? (
@@ -323,8 +322,10 @@ export default async function PlayerDashboard() {
             {/* Hangi Takımdasın */}
             <div className="bg-white/60 p-3 rounded-xl border border-amber-100 flex items-center justify-between mb-2">
               <span className="font-bold text-slate-700">Durum:</span>
-              <span className={`px-4 py-1.5 rounded-full font-black text-sm text-white ${myTeam === 'A' ? 'bg-blue-600' : 'bg-red-600'}`}>
-                TAKIM {myTeam} İÇİNDESİN
+              <span className={`px-4 py-1.5 rounded-full font-black text-sm text-white ${
+                myTeam === 'A' ? 'bg-blue-600' : myTeam === 'B' ? 'bg-red-600' : 'bg-slate-700'
+              }`}>
+                {myTeam === 'A' ? 'TAKIM A İÇİNDESİN' : myTeam === 'B' ? 'TAKIM B İÇİNDESİN' : 'KADRODA DEĞİLSİN'}
               </span>
             </div>
 
@@ -397,7 +398,7 @@ export default async function PlayerDashboard() {
             <div className="w-12 h-12 bg-slate-200 rounded-full flex items-center justify-center text-slate-400">
               <Swords size={24} />
             </div>
-            <p className="text-sm font-bold text-slate-500">Şu an kadrosunda olduğun bekleyen bir maç yok.</p>
+            <p className="text-sm font-bold text-slate-500">Şu an bekleyen veya oylamada olan bir maç bulunmuyor.</p>
           </div>
         )}
       </section>
