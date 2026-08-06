@@ -53,7 +53,8 @@ export default async function MatchesPage() {
           const teamBAvg = teamB.length > 0 ? Math.ceil(teamB.reduce((acc: number, mp: any) => acc + getMatchRating(mp), 0) / teamB.length) : "0";
           
           const matchTime = match.date.getTime();
-          const timePassed = now >= matchTime;
+          const allowedVotingTime = matchTime + 60000;
+          const canStartVoting = now >= allowedVotingTime;
           
           return (
             <div key={match.id} className="relative bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col sm:flex-row group">
@@ -126,10 +127,10 @@ export default async function MatchesPage() {
                   
                   {match.status === 'PENDING' && (
                     <>
-                      {!timePassed ? (
+                      {!canStartVoting ? (
                         <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
                           <Clock size={14} className="text-orange-500" />
-                          Oylama maç saatinde ({match.date.toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})}) açılabilir
+                          Oylama maç saatinden 1 dk sonra ({new Date(allowedVotingTime).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})}) açılabilir
                         </div>
                       ) : (
                         <form action={async () => { "use server"; await startVoting(match.id); }}>

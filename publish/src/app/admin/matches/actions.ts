@@ -47,6 +47,16 @@ export async function deleteMatch(matchId: string) {
 }
 
 export async function startVoting(matchId: string) {
+  const match = await prisma.match.findUnique({ where: { id: matchId } });
+  if (!match) return;
+
+  const matchTime = new Date(match.date).getTime();
+  const allowedTime = matchTime + 60000; // Maç saatinden 1 dk sonrası
+
+  if (Date.now() < allowedTime) {
+    return; // Maç saatinden 1 dk geçmeden oylama başlatılamaz
+  }
+
   await prisma.match.update({
     where: { id: matchId },
     data: { status: "VOTING", activeVotePlayerId: null }
