@@ -1,70 +1,85 @@
 export interface AnalystResult {
   voterId: string;
   name: string;
-  avgDiff: number;
+  score: number; // Kaç oyuncuda en yakın oyu verdi (+1 puan sayısı)
+  avgDiff: number; // Ortalama sapma (örn: ±1.2)
   accuracyPercent: number;
-  voteCount: number;
+  voteCount: number; // Oyladığı toplam oyuncu sayısı
 }
 
 export function getMatchAnalyst(votes: any[]): AnalystResult | null {
   if (!votes || votes.length === 0) return null;
 
-  // 1. Her hedef oyuncunun genel ortalama puanını hesapla
-  const targetTotals: Record<string, number> = {};
-  const targetCounts: Record<string, number> = {};
-
+  // 1. Hedef oyunculara göre oyları grupla
+  const targetVotes: Record<string, any[]> = {};
   votes.forEach((v: any) => {
     if (!v.targetId || v.rating == null) return;
-    if (!targetTotals[v.targetId]) {
-      targetTotals[v.targetId] = 0;
-      targetCounts[v.targetId] = 0;
-    }
-    targetTotals[v.targetId] += v.rating;
-    targetCounts[v.targetId] += 1;
+    if (!targetVotes[v.targetId]) targetVotes[v.targetId] = [];
+    targetVotes[v.targetId].push(v);
   });
 
-  const targetAvgs: Record<string, number> = {};
-  Object.keys(targetTotals).forEach(tId => {
-    targetAvgs[tId] = targetTotals[tId] / targetCounts[tId];
+  const targetIds = Object.keys(targetVotes);
+  if (targetIds.length === 0) return null;
+
+  // Her voter'ın puanını (+1 isabet) ve sapmasını tut
+  const voterStats: Record<string, { voterId: string; voterName: string; score: number; totalDiff: number; voteCount: number }> = {};
+
+  // 2. Her bir hedef oyuncu için en yakın tahmini verenlere +1 puan ver
+  targetIds.forEach(tId => {
+    const list = targetVotes[tId];
+    if (list.length === 0) return;
+
+    const sum = list.reduce((acc, v) => acc + Number(v.rating), 0);
+    const avg = sum / list.length; // Hedef oyuncunun aldığı ortalama puan
+
+    // En küçük sapmayı bul
+    let minDiff = Infinity;
+    list.forEach(v => {
+      const diff = Math.abs(Number(v.rating) - avg);
+      if (diff < minDiff) minDiff = diff;
+    });
+
+    // En küçük sapmayı yapan HER voter'a +1 isabet puanı ekle
+    list.forEach(v => {
+      const diff = Math.abs(Number(v.rating) - avg);
+      const vId = v.voterId;
+      const vName = v.voter?.name || v.voterName || 'Bilinmeyen Oyuncu';
+
+      if (!voterStats[vId]) {
+        voterStats[vId] = { voterId: vId, voterName: vName, score: 0, totalDiff: 0, voteCount: 0 };
+      }
+
+      voterStats[vId].totalDiff += diff;
+      voterStats[vId].voteCount += 1;
+
+      // Eğer bu hedef oyuncuda en yakın tahmini yaptıysa (veya en yakınlarla eşitse) +1 puan!
+      if (diff === minDiff) {
+        voterStats[vId].score += 1;
+      }
+    });
   });
 
-  // 2. Her oy veren için genel ortalamaya olan mutlak sapmayı hesapla
-  const voterStats: Record<string, { voterId: string; voterName: string; totalDiff: number; count: number }> = {};
+  const statsList = Object.values(voterStats).filter(s => s.voteCount > 0);
+  if (statsList.length === 0) return null;
 
-  votes.forEach((v: any) => {
-    const tAvg = targetAvgs[v.targetId];
-    if (tAvg === undefined) return;
-
-    const diff = Math.abs(v.rating - tAvg);
-    const vId = v.voterId;
-    const vName = v.voter?.name || 'Bilinmeyen Oyuncu';
-
-    if (!voterStats[vId]) {
-      voterStats[vId] = { voterId: vId, voterName: vName, totalDiff: 0, count: 0 };
-    }
-    voterStats[vId].totalDiff += diff;
-    voterStats[vId].count += 1;
+  // 3. En çok +1 puan alan (eşitlik durumunda en az ortalama sapması olan) voter'ı seç
+  statsList.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score; // En çok bilene öncelik (+1 puanı en yüksek)
+    const avgDiffA = a.totalDiff / a.voteCount;
+    const avgDiffB = b.totalDiff / b.voteCount;
+    return avgDiffA - avgDiffB; // Eşitlikte en az ortalama sapma
   });
 
-  let best: AnalystResult | null = null;
-  let minDiff = Infinity;
+  const winner = statsList[0];
+  const avgDiff = Math.round((winner.totalDiff / winner.voteCount) * 10) / 10;
+  const accuracyPercent = Math.max(0, Math.round((100 - avgDiff) * 10) / 10);
 
-  Object.values(voterStats).forEach(stat => {
-    if (stat.count === 0) return;
-    const avgDiff = stat.totalDiff / stat.count;
-    if (avgDiff < minDiff) {
-      minDiff = avgDiff;
-      const roundedDiff = Math.round(avgDiff * 10) / 10;
-      const accuracyPercent = Math.max(0, Math.round((100 - avgDiff) * 10) / 10);
-      best = {
-        voterId: stat.voterId,
-        name: stat.voterName,
-        avgDiff: roundedDiff,
-        accuracyPercent,
-        voteCount: stat.count
-      };
-    }
-  });
-
-  return best;
+  return {
+    voterId: winner.voterId,
+    name: winner.voterName,
+    score: winner.score,
+    avgDiff,
+    accuracyPercent,
+    voteCount: winner.voteCount
+  };
 }

@@ -77,15 +77,15 @@ export default function MatchReportClient({ match }: { match: any }) {
             <div className="flex flex-col">
               <span className="text-[10px] font-black uppercase text-blue-200 tracking-widest">Haftanın Analizcisi</span>
               <span className="text-lg font-black text-white leading-tight mt-0.5">{analyst.name}</span>
-              <span className="text-[11px] text-blue-100 font-medium mt-0.5">En İsabetli Oy Veren Oyuncu</span>
+              <span className="text-[11px] text-blue-100 font-medium mt-0.5">{analyst.score} Oyuncuda En İsabetli Tahmin</span>
             </div>
           </div>
 
           <div className="flex flex-col items-end z-10 shrink-0">
             <span className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1 rounded-xl text-xs font-black shadow-sm">
-              ±{analyst.avgDiff} Sapma
+              🏆 {analyst.score} / {analyst.voteCount} İsabet
             </span>
-            <span className="text-[9px] text-blue-200 font-semibold mt-1">%{analyst.accuracyPercent} İsabet</span>
+            <span className="text-[9px] text-blue-200 font-semibold mt-1">±{analyst.avgDiff} Sapma</span>
           </div>
         </div>
       )}
