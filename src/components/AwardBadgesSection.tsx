@@ -37,8 +37,8 @@ export default function AwardBadgesSection({ badges }: { badges: AwardBadge[] })
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-[10px] font-black uppercase tracking-wider opacity-85">{badge.title}</span>
-                <span className="text-base font-black truncate leading-tight mt-0.5">{badge.playerName}</span>
-                <span className="text-[11px] opacity-90 font-medium mt-0.5 truncate">{badge.detail}</span>
+                <span className="text-sm sm:text-base font-black leading-tight mt-0.5 break-words">{badge.playerName}</span>
+                <span className="text-[11px] opacity-90 font-medium mt-0.5">{badge.detail}</span>
               </div>
             </div>
           </div>

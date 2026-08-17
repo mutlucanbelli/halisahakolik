@@ -139,38 +139,6 @@ export async function getAwardBadges(): Promise<AwardBadge[]> {
       }
     }
 
-    // 4. Demir Adam (En Çok Maç Yapan)
-    const playersWithMatchCounts = await prisma.player.findMany({
-      include: {
-        _count: {
-          select: {
-            matches: {
-              where: { match: { status: "COMPLETED" } }
-            }
-          }
-        }
-      }
-    });
-
-    if (playersWithMatchCounts.length > 0) {
-      const sortedByMatches = [...playersWithMatchCounts].sort((a, b) => b._count.matches - a._count.matches);
-      const ironman = sortedByMatches[0];
-      if (ironman && ironman._count.matches > 0) {
-        const topCount = ironman._count.matches;
-        const tiedIronmen = playersWithMatchCounts.filter(p => p._count.matches === topCount);
-        const ironmanNames = Array.from(new Set(tiedIronmen.map(i => i.name))).join(" & ");
-
-        badges.push({
-          id: "ironman",
-          title: "Demir Adam (İstikrar)",
-          playerName: ironmanNames,
-          detail: `Toplam ${topCount} Maç Katılımı 🛡️`,
-          badgeType: "ironman",
-          color: "from-slate-800 to-slate-950 text-white"
-        });
-      }
-    }
-
   } catch (error) {
     console.error("Error generating award badges:", error);
   }
