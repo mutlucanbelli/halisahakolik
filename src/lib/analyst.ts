@@ -72,12 +72,20 @@ export function getMatchAnalyst(votes: any[]): AnalystResult | null {
   });
 
   const winner = statsList[0];
-  const avgDiff = Math.round((winner.totalDiff / winner.voteCount) * 10) / 10;
+  const winnerAvgDiff = winner.totalDiff / winner.voteCount;
+
+  // Eşit birincileri bul
+  const tiedWinners = statsList.filter(
+    s => s.score === winner.score && Math.abs((s.totalDiff / s.voteCount) - winnerAvgDiff) < 0.05
+  );
+
+  const winnerNames = Array.from(new Set(tiedWinners.map(w => w.voterName))).join(" & ");
+  const avgDiff = Math.round(winnerAvgDiff * 10) / 10;
   const accuracyPercent = Math.max(0, Math.round((100 - avgDiff) * 10) / 10);
 
   return {
     voterId: winner.voterId,
-    name: winner.voterName,
+    name: winnerNames,
     score: winner.score,
     avgDiff,
     accuracyPercent,
@@ -149,12 +157,20 @@ export function getMatchWorstAnalyst(votes: any[]): AnalystResult | null {
   });
 
   const loser = statsList[0];
-  const avgDiff = Math.round((loser.totalDiff / loser.voteCount) * 10) / 10;
+  const loserAvgDiff = loser.totalDiff / loser.voteCount;
+
+  // Eşit birincileri bul
+  const tiedLosers = statsList.filter(
+    s => s.score === loser.score && Math.abs((s.totalDiff / s.voteCount) - loserAvgDiff) < 0.05
+  );
+
+  const loserNames = Array.from(new Set(tiedLosers.map(l => l.voterName))).join(" & ");
+  const avgDiff = Math.round(loserAvgDiff * 10) / 10;
   const accuracyPercent = Math.max(0, Math.round((100 - avgDiff) * 10) / 10);
 
   return {
     voterId: loser.voterId,
-    name: loser.voterName,
+    name: loserNames,
     score: loser.score,
     avgDiff,
     accuracyPercent,

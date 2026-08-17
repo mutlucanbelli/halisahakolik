@@ -38,7 +38,7 @@ export async function getAwardBadges(): Promise<AwardBadge[]> {
         });
       }
 
-      if (worst && worst.voterId !== best?.voterId) {
+      if (worst && worst.name !== best?.name) {
         badges.push({
           id: "worst",
           title: "Haftanın Karavanası",
@@ -67,11 +67,15 @@ export async function getAwardBadges(): Promise<AwardBadge[]> {
       const sortedByRating = [...matchPlayers].sort((a, b) => (b.earnedRating || 0) - (a.earnedRating || 0));
       const topForm = sortedByRating[0];
       if (topForm && topForm.earnedRating) {
+        const topEarned = topForm.earnedRating;
+        const tiedTopForms = matchPlayers.filter(mp => Math.abs((mp.earnedRating || 0) - topEarned) < 0.01);
+        const formNames = Array.from(new Set(tiedTopForms.map(mp => mp.player.name))).join(" & ");
+
         badges.push({
           id: "form",
           title: "Alev Alev (En Formda)",
-          playerName: topForm.player.name,
-          detail: `Son Maç Reytingi: ${Math.ceil(topForm.earnedRating)} OVR 🔥`,
+          playerName: formNames,
+          detail: `Son Maç Reytingi: ${Math.ceil(topEarned)} OVR 🔥`,
           badgeType: "form",
           color: "from-amber-500 to-orange-600 text-white"
         });
@@ -98,26 +102,35 @@ export async function getAwardBadges(): Promise<AwardBadge[]> {
       if (statsArr.length > 0) {
         statsArr.sort((a, b) => (b.totalGiven / b.count) - (a.totalGiven / a.count));
         const generous = statsArr[0];
+        const generousAvg = generous.totalGiven / generous.count;
+
+        const tiedGenerous = statsArr.filter(s => Math.abs((s.totalGiven / s.count) - generousAvg) < 0.05);
+        const generousNames = Array.from(new Set(tiedGenerous.map(g => g.name))).join(" & ");
+
         const stingy = statsArr[statsArr.length - 1];
+        const stingyAvg = stingy.totalGiven / stingy.count;
+
+        const tiedStingy = statsArr.filter(s => Math.abs((s.totalGiven / s.count) - stingyAvg) < 0.05);
+        const stingyNames = Array.from(new Set(tiedStingy.map(s => s.name))).join(" & ");
 
         if (generous) {
-          const avgGiven = Math.round((generous.totalGiven / generous.count) * 10) / 10;
+          const avgGiven = Math.round(generousAvg * 10) / 10;
           badges.push({
             id: "generous",
             title: "En Cömert Oyuncu",
-            playerName: generous.name,
+            playerName: generousNames,
             detail: `Verdiği Ort. Puan: ${avgGiven} 💚`,
             badgeType: "generous",
             color: "from-emerald-600 to-teal-700 text-white"
           });
         }
 
-        if (stingy && stingy.name !== generous?.name) {
-          const avgGiven = Math.round((stingy.totalGiven / stingy.count) * 10) / 10;
+        if (stingy && stingyNames !== generousNames) {
+          const avgGiven = Math.round(stingyAvg * 10) / 10;
           badges.push({
             id: "stingy",
             title: "En Cimri Oyuncu",
-            playerName: stingy.name,
+            playerName: stingyNames,
             detail: `Verdiği Ort. Puan: ${avgGiven} 💜`,
             badgeType: "stingy",
             color: "from-purple-600 to-violet-800 text-white"
@@ -143,11 +156,15 @@ export async function getAwardBadges(): Promise<AwardBadge[]> {
       const sortedByMatches = [...playersWithMatchCounts].sort((a, b) => b._count.matches - a._count.matches);
       const ironman = sortedByMatches[0];
       if (ironman && ironman._count.matches > 0) {
+        const topCount = ironman._count.matches;
+        const tiedIronmen = playersWithMatchCounts.filter(p => p._count.matches === topCount);
+        const ironmanNames = Array.from(new Set(tiedIronmen.map(i => i.name))).join(" & ");
+
         badges.push({
           id: "ironman",
           title: "Demir Adam (İstikrar)",
-          playerName: ironman.name,
-          detail: `Toplam ${ironman._count.matches} Maç Katılımı 🛡️`,
+          playerName: ironmanNames,
+          detail: `Toplam ${topCount} Maç Katılımı 🛡️`,
           badgeType: "ironman",
           color: "from-slate-800 to-slate-950 text-white"
         });
