@@ -64,9 +64,9 @@ export default async function MatchesPage() {
                 <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-[#fafafa] rounded-full sm:block hidden"></div>
                 
                 <div className="text-xs font-bold text-gray-400 tracking-widest uppercase mb-1">Tarih</div>
-                <div className="text-3xl font-black tracking-tighter mb-1">{match.date.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}</div>
+                <div className="text-3xl font-black tracking-tighter mb-1">{match.date.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', timeZone: 'Europe/Istanbul' })}</div>
                 <div className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-4">
-                  <Clock size={14} /> {match.date.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'})}
+                  <Clock size={14} /> {match.date.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit', timeZone: 'Europe/Istanbul'})}
                 </div>
 
                 <div className="mt-auto">
@@ -130,7 +130,7 @@ export default async function MatchesPage() {
                       {!canStartVoting ? (
                         <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
                           <Clock size={14} className="text-orange-500" />
-                          Oylama maç saatinden 1 dk sonra ({new Date(allowedVotingTime).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})}) açılabilir
+                          Oylama maç saatinden 1 dk sonra ({new Date(allowedVotingTime).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit', timeZone: 'Europe/Istanbul'})}) açılabilir
                         </div>
                       ) : (
                         <form action={async () => { "use server"; await startVoting(match.id); }}>

@@ -103,10 +103,10 @@ export default async function AdminDashboard() {
             <div className="flex justify-between items-center border-b border-amber-100 pb-3">
               <div className="flex items-center gap-2 text-amber-700 font-bold">
                 <Calendar size={16} />
-                <span>{nextMatch.date.toLocaleDateString('tr-TR')}</span>
+                <span>{nextMatch.date.toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' })}</span>
               </div>
               <div className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-black text-sm shadow-sm">
-                {nextMatch.date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                {nextMatch.date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' })}
               </div>
             </div>
             <div className="flex justify-between items-center pt-1">
@@ -193,8 +193,8 @@ export default async function AdminDashboard() {
             return (
               <Link href="/admin/reports" key={match.id} className="bg-white border border-slate-100 p-4 rounded-xl shadow-sm hover:shadow-md transition-all">
                 <div className="text-xs font-bold text-slate-400 mb-3 border-b border-slate-50 pb-2 flex justify-between">
-                  <span>{match.date.toLocaleDateString('tr-TR')}</span>
-                  <span>{match.date.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'})}</span>
+                  <span>{match.date.toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' })}</span>
+                  <span>{match.date.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit', timeZone: 'Europe/Istanbul'})}</span>
                 </div>
                 
                 <div className="flex justify-between items-center gap-4">

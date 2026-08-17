@@ -205,7 +205,7 @@ export default function MatchForm({ players }: { players: any[] }) {
   };
 
   if (showPreview) {
-    const finalDateTime = `${dateStr}T${hourStr}`;
+    const finalDateTime = `${dateStr}T${hourStr}:00+03:00`;
     const avgA = teamA.length > 0 ? Math.ceil(teamA.reduce((sum, p) => sum + getPosRating(p), 0) / teamA.length) : 0;
     const avgB = teamB.length > 0 ? Math.ceil(teamB.reduce((sum, p) => sum + getPosRating(p), 0) / teamB.length) : 0;
 

@@ -193,7 +193,7 @@ export default function PlayerEditModal({ player }: { player: any }) {
                     m.position === 'Kaleci' ? 'bg-violet-50 border-violet-100' : 'bg-white border-blue-100'
                   }`}>
                     <span className="text-slate-600 font-semibold">
-                      {m.match?.date ? new Date(m.match.date).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' }) : '-'}
+                      {m.match?.date ? new Date(m.match.date).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', timeZone: 'Europe/Istanbul' }) : '-'}
                       <span className={`text-xs ml-1.5 uppercase font-bold ${
                         m.position === 'Kaleci' ? 'text-violet-400' : 'text-slate-400'
                       }`}>{m.position}</span>

@@ -7,10 +7,10 @@ export default function AutoRefreshClient({ hasVoting }: { hasVoting?: boolean }
   const router = useRouter();
 
   useEffect(() => {
-    // Oylama yoksa 20 saniye, varsa 8 saniyede bir yenile
+    // Oylama yoksa 20 saniye, varsa 3 saniyede bir yenile
     const interval = setInterval(() => {
       router.refresh();
-    }, hasVoting ? 8000 : 20000);
+    }, hasVoting ? 3000 : 20000);
     
     return () => clearInterval(interval);
   }, [router, hasVoting]);

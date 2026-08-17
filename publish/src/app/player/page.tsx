@@ -184,6 +184,7 @@ export default async function PlayerDashboard() {
       {/* Canlı Oylama Ekranı */}
       {activeVoteTarget && votingMatch && (
         <LiveVoteClient 
+          key={activeVoteTarget.id}
           matchId={votingMatch.id}
           voterId={player.id}
           target={{ id: activeVoteTarget.id, name: activeVoteTarget.name }}
@@ -239,7 +240,7 @@ export default async function PlayerDashboard() {
           <div className="bg-white border border-slate-100 p-5 rounded-2xl flex flex-col gap-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
-                <span className="text-slate-800 font-bold">{lastMatchPlayer.match.date.toLocaleDateString('tr-TR')}</span>
+                <span className="text-slate-800 font-bold">{lastMatchPlayer.match.date.toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' })}</span>
                 <span className="text-slate-400 text-xs font-semibold uppercase">{lastMatchPlayer.position} Olarak Oynadı</span>
               </div>
               <div className="flex flex-col items-end text-center">
@@ -313,8 +314,8 @@ export default async function PlayerDashboard() {
             {/* Geri Sayım */}
             <div className="flex justify-between items-center border-b border-amber-200/60 pb-4">
               <div className="flex flex-col">
-                <span className="text-amber-800 font-bold">{nextMatch.date.toLocaleDateString('tr-TR')}</span>
-                <span className="text-amber-600 text-sm font-medium">{nextMatch.date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
+                <span className="text-amber-800 font-bold">{nextMatch.date.toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' })}</span>
+                <span className="text-amber-600 text-sm font-medium">{nextMatch.date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' })}</span>
               </div>
               <CountdownTimer targetDate={nextMatch.date.toISOString()} />
             </div>

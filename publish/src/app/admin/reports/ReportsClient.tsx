@@ -55,8 +55,8 @@ export default function ReportsClient({ matches }: { matches: any[] }) {
                     <Calendar size={18} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-black text-sm">{new Date(match.date).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })}</h3>
-                    <p className="text-xs text-gray-500 font-medium">{new Date(match.date).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'})}</p>
+                    <h3 className="font-bold text-black text-sm">{new Date(match.date).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Istanbul' })}</h3>
+                    <p className="text-xs text-gray-500 font-medium">{new Date(match.date).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit', timeZone: 'Europe/Istanbul'})}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

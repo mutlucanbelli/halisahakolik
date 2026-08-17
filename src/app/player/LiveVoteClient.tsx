@@ -50,6 +50,13 @@ export default function LiveVoteClient({
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
+  // Oylanan oyuncu değiştiğinde (admin panelden başka birini seçtiğinde) state'i sıfırla
+  useEffect(() => {
+    setSubmitted(false);
+    setRating(50);
+    setLoading(false);
+  }, [target.id]);
+
   // Her zaman modal açık (oylama aktifse) — body scroll kilitle
   useBodyScrollLock(true);
 

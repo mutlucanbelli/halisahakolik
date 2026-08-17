@@ -58,7 +58,7 @@ export default function MatchReportClient({ match }: { match: any }) {
         <div>
           <h1 className="text-2xl font-black text-black tracking-tight">Maç Detayı</h1>
           <p className="text-xs text-gray-500 font-medium">
-            {new Date(match.date).toLocaleDateString("tr-TR", { day: 'numeric', month: 'long', year: 'numeric' })}
+            {new Date(match.date).toLocaleDateString("tr-TR", { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Istanbul' })}
           </p>
         </div>
       </div>
