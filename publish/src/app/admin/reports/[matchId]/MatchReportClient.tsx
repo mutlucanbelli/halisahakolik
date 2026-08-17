@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronUp, ChevronDown, Minus, ArrowRight, Target } from "lucide-react";
+import { ArrowLeft, ChevronUp, ChevronDown, Minus, ArrowRight, Target, Award } from "lucide-react";
+import { getMatchAnalyst } from "@/lib/analyst";
 
 export default function MatchReportClient({ match }: { match: any }) {
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
+  const analyst = getMatchAnalyst(match.votes);
 
   const toggleExpand = (id: string) => {
     setExpandedIds(prev =>
@@ -62,6 +64,31 @@ export default function MatchReportClient({ match }: { match: any }) {
           </p>
         </div>
       </div>
+
+      {/* ======= HAFTANIN ANALİZCİSİ KARTI ======= */}
+      {analyst && (
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-5 text-white shadow-xl shadow-blue-500/20 relative overflow-hidden flex items-center justify-between">
+          <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+          
+          <div className="flex items-center gap-3.5 z-10">
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl flex items-center justify-center text-yellow-300 shadow-inner">
+              <Award size={26} />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase text-blue-200 tracking-widest">Haftanın Analizcisi</span>
+              <span className="text-lg font-black text-white leading-tight mt-0.5">{analyst.name}</span>
+              <span className="text-[11px] text-blue-100 font-medium mt-0.5">En İsabetli Oy Veren Oyuncu</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-end z-10 shrink-0">
+            <span className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1 rounded-xl text-xs font-black shadow-sm">
+              ±{analyst.avgDiff} Sapma
+            </span>
+            <span className="text-[9px] text-blue-200 font-semibold mt-1">%{analyst.accuracyPercent} İsabet</span>
+          </div>
+        </div>
+      )}
 
       {/* ======= OY ANALİZİ (Açılır-Kapanır Akordiyon Tasarımı) ======= */}
       {match.votes?.length > 0 && (

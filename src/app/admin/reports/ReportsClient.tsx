@@ -1,8 +1,9 @@
 "use client";
 
-import { ClipboardList, Calendar, CheckCircle2, AlertCircle, Star, ArrowRight, Trash2 } from "lucide-react";
+import { ClipboardList, Calendar, CheckCircle2, AlertCircle, Star, ArrowRight, Trash2, Award } from "lucide-react";
 import { deleteMatch } from "../matches/actions";
 import Link from "next/link";
+import { getMatchAnalyst } from "@/lib/analyst";
 
 export default function ReportsClient({ matches }: { matches: any[] }) {
   return (
@@ -45,6 +46,7 @@ export default function ReportsClient({ matches }: { matches: any[] }) {
 
           // Katılımcı sayısı: herhangi bir oyuncuya oy veren max benzersiz kişi sayısı
           const uniqueVoters = match.votes ? new Set(match.votes.map((v: any) => v.voterId)).size : 0;
+          const analyst = match.votes ? getMatchAnalyst(match.votes) : null;
           
           return (
             <div key={match.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300">
@@ -66,8 +68,8 @@ export default function ReportsClient({ matches }: { matches: any[] }) {
                 </div>
               </div>
 
-              {/* MVP Banner */}
-              <div className="bg-yellow-50/50 border-b border-yellow-100 px-5 py-3 flex justify-between items-center">
+              {/* MVP & Analizci Banner */}
+              <div className="bg-yellow-50/50 border-b border-yellow-100 px-5 py-3 flex justify-between items-center flex-wrap gap-2">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center shadow-inner">
                     <Star size={14} className="fill-yellow-500" />
@@ -77,6 +79,17 @@ export default function ReportsClient({ matches }: { matches: any[] }) {
                     <span className="text-sm font-black text-black">{mvpName} {mvpRating > 0 && <span className="text-xs font-bold text-gray-400 ml-1">({mvpRating})</span>}</span>
                   </div>
                 </div>
+
+                {analyst && (
+                  <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-xl">
+                    <Award size={14} className="text-blue-600" />
+                    <div className="flex flex-col">
+                      <span className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">Haftanın Analizcisi</span>
+                      <span className="text-xs font-black text-blue-900">{analyst.name} <span className="text-[10px] text-blue-500 font-bold">(±{analyst.avgDiff})</span></span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="text-right">
                   <span className="block text-[10px] font-bold text-gray-400 uppercase">Katılımcı</span>
                   <span className="block text-sm font-black text-black">{uniqueVoters} Kişi</span>

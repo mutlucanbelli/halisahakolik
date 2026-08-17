@@ -2,13 +2,14 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { logoutPlayer } from "@/app/actions";
-import { User, LogOut, Medal, Clock, Shield, Activity, Swords, Star } from "lucide-react";
+import { User, LogOut, Medal, Clock, Shield, Activity, Swords, Star, Award } from "lucide-react";
 import CountdownTimer from "./CountdownTimer";
 import LeaderboardClient from "./LeaderboardClient";
 import ChangePasswordModal from "./ChangePasswordModal";
 import LiveVoteClient from "./LiveVoteClient";
 import AutoRefreshClient from "./AutoRefreshClient";
 import PitchView from "@/components/PitchView";
+import { getMatchAnalyst } from "@/lib/analyst";
 
 export default async function PlayerDashboard() {
   const cookieStore = await cookies();
@@ -130,6 +131,9 @@ export default async function PlayerDashboard() {
       }
     });
   }
+
+  // Son maçın Analizcisini hesapla (Oylarda genel ortalamaya en yakın tahmin veren)
+  const lastMatchAnalyst = (lastMatchPlayer && lastMatchPlayer.match.votes) ? getMatchAnalyst(lastMatchPlayer.match.votes) : null;
 
   // Son maçta bana puan verenler
   let highestVoter = null;
@@ -257,20 +261,39 @@ export default async function PlayerDashboard() {
               </div>
             </div>
             
-            {/* MVP Banner */}
-            <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-amber-600">
-                  <Star size={16} className="fill-amber-500" />
+            {/* MVP ve Analizci Banner Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-amber-600">
+                    <Star size={16} className="fill-amber-500" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black uppercase text-amber-700 tracking-wider">Maçın MVP'si</span>
+                    <span className="text-sm font-bold text-amber-900">{lastMatchMVP}</span>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase text-amber-700 tracking-wider">Maçın MVP'si</span>
-                  <span className="text-sm font-bold text-amber-900">{lastMatchMVP}</span>
-                </div>
+                {lastMatchMVPRating > 0 && (
+                  <div className="text-xs font-black text-amber-600 bg-white px-2 py-1 rounded shadow-sm">
+                    {lastMatchMVPRating} OVR
+                  </div>
+                )}
               </div>
-              {lastMatchMVPRating > 0 && (
-                <div className="text-sm font-black text-amber-600 bg-white px-2 py-1 rounded shadow-sm">
-                  {lastMatchMVPRating} OVR
+
+              {lastMatchAnalyst && (
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                      <Award size={16} className="text-blue-600" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black uppercase text-blue-700 tracking-wider">Haftanın Analizcisi</span>
+                      <span className="text-sm font-bold text-blue-900">{lastMatchAnalyst.name}</span>
+                    </div>
+                  </div>
+                  <div className="text-xs font-black text-blue-600 bg-white px-2 py-1 rounded shadow-sm">
+                    ±{lastMatchAnalyst.avgDiff} Sapma
+                  </div>
                 </div>
               )}
             </div>
