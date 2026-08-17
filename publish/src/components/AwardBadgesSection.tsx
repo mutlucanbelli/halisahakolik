@@ -11,7 +11,7 @@ export default function AwardBadgesSection({ badges }: { badges: AwardBadge[] })
       case "form": return <Flame size={22} className="text-amber-200" />;
       case "generous": return <HeartHandshake size={22} className="text-emerald-200" />;
       case "stingy": return <Coins size={22} className="text-purple-200" />;
-      case "ironman": return <ShieldCheck size={22} className="text-blue-300" />;
+      case "hero": return <Sparkles size={22} className="text-cyan-200" />;
       default: return <Sparkles size={22} className="text-white" />;
     }
   };

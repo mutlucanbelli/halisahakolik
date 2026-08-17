@@ -6,7 +6,7 @@ export interface AwardBadge {
   title: string;
   playerName: string;
   detail: string;
-  badgeType: 'analyst' | 'worst' | 'form' | 'generous' | 'stingy' | 'ironman';
+  badgeType: 'analyst' | 'worst' | 'form' | 'generous' | 'stingy' | 'hero';
   color: string;
 }
 
@@ -14,7 +14,7 @@ export async function getAwardBadges(): Promise<AwardBadge[]> {
   const badges: AwardBadge[] = [];
 
   try {
-    // 1. Son Tamamlanan Maçı Çek (Analizci ve Karavana için)
+    // 1. Son Tamamlanan Maçı Çek (Analizci, Karavana ve Sürpriz Kahraman için)
     const lastCompletedMatch = await prisma.match.findFirst({
       where: { status: "COMPLETED" },
       orderBy: { date: "desc" },
@@ -23,30 +23,67 @@ export async function getAwardBadges(): Promise<AwardBadge[]> {
       }
     });
 
-    if (lastCompletedMatch && lastCompletedMatch.votes.length > 0) {
-      const best = getMatchAnalyst(lastCompletedMatch.votes);
-      const worst = getMatchWorstAnalyst(lastCompletedMatch.votes);
+    if (lastCompletedMatch) {
+      if (lastCompletedMatch.votes && lastCompletedMatch.votes.length > 0) {
+        const best = getMatchAnalyst(lastCompletedMatch.votes);
+        const worst = getMatchWorstAnalyst(lastCompletedMatch.votes);
 
-      if (best) {
-        badges.push({
-          id: "analyst",
-          title: "Haftanın Analizcisi",
-          playerName: best.name,
-          detail: `${best.score}/${best.voteCount} İsabet (±${best.avgDiff} Sapma)`,
-          badgeType: "analyst",
-          color: "from-blue-600 to-indigo-700 text-white"
-        });
+        if (best) {
+          badges.push({
+            id: "analyst",
+            title: "Haftanın Analizcisi",
+            playerName: best.name,
+            detail: `${best.score}/${best.voteCount} İsabet (±${best.avgDiff} Sapma)`,
+            badgeType: "analyst",
+            color: "from-blue-600 to-indigo-700 text-white"
+          });
+        }
+
+        if (worst && worst.name !== best?.name) {
+          badges.push({
+            id: "worst",
+            title: "Haftanın Karavanası",
+            playerName: worst.name,
+            detail: `${worst.score}/${worst.voteCount} Karavana (±${worst.avgDiff} Sapma)`,
+            badgeType: "worst",
+            color: "from-rose-600 to-red-700 text-white"
+          });
+        }
       }
 
-      if (worst && worst.name !== best?.name) {
-        badges.push({
-          id: "worst",
-          title: "Haftanın Karavanası",
-          playerName: worst.name,
-          detail: `${worst.score}/${worst.voteCount} Karavana (±${worst.avgDiff} Sapma)`,
-          badgeType: "worst",
-          color: "from-rose-600 to-red-700 text-white"
-        });
+      // Sürpriz Kahraman (Beklendiğinin en üzerinde puan alan)
+      const matchPlayersWithRating = await prisma.matchPlayer.findMany({
+        where: {
+          matchId: lastCompletedMatch.id,
+          earnedRating: { not: null }
+        },
+        include: { player: true }
+      });
+
+      if (matchPlayersWithRating.length > 0) {
+        const diffs = matchPlayersWithRating.map(mp => ({
+          name: mp.player.name,
+          diff: (mp.earnedRating || 0) - (mp.player.rating || 50)
+        }));
+
+        diffs.sort((a, b) => b.diff - a.diff);
+        const topHero = diffs[0];
+
+        if (topHero && topHero.diff > 0) {
+          const maxDiff = topHero.diff;
+          const tiedHeroes = diffs.filter(d => Math.abs(d.diff - maxDiff) < 0.1);
+          const heroNames = Array.from(new Set(tiedHeroes.map(d => d.name))).join(" & ");
+          const roundedDiff = Math.round(maxDiff * 10) / 10;
+
+          badges.push({
+            id: "hero",
+            title: "Maçın Sürpriz Kahramanı",
+            playerName: heroNames,
+            detail: `Beklendiğinin +${roundedDiff} OVR Üzerinde Sıçrama ✨`,
+            badgeType: "hero",
+            color: "from-cyan-600 to-blue-700 text-white"
+          });
+        }
       }
     }
 

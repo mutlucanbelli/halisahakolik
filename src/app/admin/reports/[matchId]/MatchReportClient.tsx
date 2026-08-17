@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronUp, ChevronDown, Minus, ArrowRight, Target, Award, AlertTriangle } from "lucide-react";
-import { getMatchAnalyst, getMatchWorstAnalyst } from "@/lib/analyst";
+import { ArrowLeft, ChevronUp, ChevronDown, Minus, ArrowRight, Target, Award, AlertTriangle, Sparkles } from "lucide-react";
+import { getMatchAnalyst, getMatchWorstAnalyst, getMatchSurpriseHero } from "@/lib/analyst";
 
 export default function MatchReportClient({ match }: { match: any }) {
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const analyst = getMatchAnalyst(match.votes);
   const worstAnalyst = getMatchWorstAnalyst(match.votes);
+  const hero = getMatchSurpriseHero(match);
 
   const toggleExpand = (id: string) => {
     setExpandedIds(prev =>
@@ -112,6 +113,30 @@ export default function MatchReportClient({ match }: { match: any }) {
                 🎯 {worstAnalyst.score} Karavana
               </span>
               <span className="text-[9px] text-rose-200 font-semibold mt-1">±{worstAnalyst.avgDiff} Sapma</span>
+            </div>
+          </div>
+        )}
+
+        {hero && (
+          <div className="bg-gradient-to-r from-cyan-600 to-blue-700 rounded-3xl p-5 text-white shadow-xl shadow-cyan-500/20 relative overflow-hidden flex items-center justify-between">
+            <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+            
+            <div className="flex items-center gap-3.5 z-10">
+              <div className="w-12 h-12 bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl flex items-center justify-center text-cyan-200 shadow-inner">
+                <Sparkles size={24} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black uppercase text-cyan-200 tracking-widest">Maçın Sürpriz Kahramanı</span>
+                <span className="text-lg font-black text-white leading-tight mt-0.5">{hero.name}</span>
+                <span className="text-[11px] text-cyan-100 font-medium mt-0.5">Beklediğinin Üzerinde Performans</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-end z-10 shrink-0">
+              <span className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1 rounded-xl text-xs font-black shadow-sm">
+                ✨ +{hero.diff} OVR
+              </span>
+              <span className="text-[9px] text-cyan-200 font-semibold mt-1">Sıçrama</span>
             </div>
           </div>
         )}

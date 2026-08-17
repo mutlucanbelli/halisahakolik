@@ -184,3 +184,32 @@ export function getMatchAnalysts(votes: any[]) {
     worst: getMatchWorstAnalyst(votes)
   };
 }
+
+// ✨ Maçın Sürpriz Kahramanı (Beklendiğinin en üzerinde puan alan)
+export function getMatchSurpriseHero(match: any): { name: string; diff: number } | null {
+  if (!match || !match.players || match.players.length === 0) return null;
+
+  const validPlayers = match.players.filter((mp: any) => mp.earnedRating != null && mp.player);
+  if (validPlayers.length === 0) return null;
+
+  const diffs = validPlayers.map((mp: any) => {
+    const baseRating = mp.player.rating || 50;
+    return {
+      name: mp.player.name,
+      diff: (mp.earnedRating || 0) - baseRating
+    };
+  });
+
+  diffs.sort((a: any, b: any) => b.diff - a.diff);
+  const top = diffs[0];
+
+  if (!top || top.diff <= 0) return null;
+
+  const tied = diffs.filter((d: any) => Math.abs(d.diff - top.diff) < 0.1);
+  const names = Array.from(new Set(tied.map((d: any) => d.name))).join(" & ");
+
+  return {
+    name: names,
+    diff: Math.round(top.diff * 10) / 10
+  };
+}
