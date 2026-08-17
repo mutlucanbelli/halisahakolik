@@ -3,9 +3,10 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { 
   Users, CalendarDays, Activity, PlusCircle, UserPlus, 
-  Trophy, Medal, ArrowRight, Clock, Calendar 
+  Trophy, Medal, ArrowRight, Clock, Calendar, Award
 } from "lucide-react";
 import Link from "next/link";
+import { getMatchAnalyst } from "@/lib/analyst";
 
 export default async function AdminDashboard() {
   const cookieStore = await cookies();
@@ -39,7 +40,10 @@ export default async function AdminDashboard() {
     where: { status: 'COMPLETED' },
     orderBy: { date: 'desc' },
     take: 2,
-    include: { players: { include: { player: true } } }
+    include: {
+      players: { include: { player: true } },
+      votes: { include: { voter: true, target: true } }
+    }
   });
 
   return (
@@ -212,6 +216,19 @@ export default async function AdminDashboard() {
                     <span className="text-[10px] bg-white text-red-600 border border-red-100 px-2 py-0.5 rounded-full font-bold shadow-sm">Ort: {teamBAvg}</span>
                   </div>
                 </div>
+
+                {(() => {
+                  const analyst = match.votes ? getMatchAnalyst(match.votes) : null;
+                  if (!analyst) return null;
+                  return (
+                    <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-blue-700 bg-blue-50/60 px-2.5 py-1 rounded-lg">
+                      <span className="flex items-center gap-1">
+                        <Award size={13} className="text-blue-600" /> Analizci: {analyst.name}
+                      </span>
+                      <span className="text-[10px] text-blue-600 bg-white px-1.5 py-0.5 rounded border border-blue-100 shadow-2xs">±{analyst.avgDiff} Sapma</span>
+                    </div>
+                  );
+                })()}
               </Link>
             );
           })}
