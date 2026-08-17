@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { getMatchAnalyst, getMatchWorstAnalyst } from "@/lib/analyst";
+import { getAwardBadges } from "@/lib/badges";
+import AwardBadgesSection from "@/components/AwardBadgesSection";
 
 export default async function AdminDashboard() {
   const cookieStore = await cookies();
@@ -45,6 +47,8 @@ export default async function AdminDashboard() {
       votes: { include: { voter: true, target: true } }
     }
   });
+
+  const awardBadges = await getAwardBadges();
 
   return (
     <div className="w-full flex flex-col p-4 sm:p-6 animate-fade-in pb-32 gap-8">
@@ -94,6 +98,9 @@ export default async function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Haftanın Unvanları & Ödül Kartları */}
+      <AwardBadgesSection badges={awardBadges} />
 
       {/* Yaklaşan Maç Section */}
       {nextMatch && (

@@ -10,6 +10,8 @@ import LiveVoteClient from "./LiveVoteClient";
 import AutoRefreshClient from "./AutoRefreshClient";
 import PitchView from "@/components/PitchView";
 import { getMatchAnalyst, getMatchWorstAnalyst } from "@/lib/analyst";
+import { getAwardBadges } from "@/lib/badges";
+import AwardBadgesSection from "@/components/AwardBadgesSection";
 
 export default async function PlayerDashboard() {
   const cookieStore = await cookies();
@@ -180,6 +182,7 @@ export default async function PlayerDashboard() {
   });
 
   const myRank = allPlayers.findIndex(p => p.id === player.id) + 1;
+  const awardBadges = await getAwardBadges();
 
   return (
     <div className="w-full flex flex-col p-4 sm:p-6 animate-fade-in pb-12 gap-8">
@@ -233,6 +236,9 @@ export default async function PlayerDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Haftanın Unvanları & Ödül Kartları */}
+      <AwardBadgesSection badges={awardBadges} />
 
       {/* Son Maç Puanları */}
       <section className="flex flex-col gap-3">
