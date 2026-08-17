@@ -165,8 +165,8 @@ export async function reevaluatePlayer(playerId: string, type: 'gk' | 'outfield'
     }
   });
 
-  // En az 2 tamamlanmış maç şartı
-  if (unappliedMatches.length < 2) return;
+  // En az 3 tamamlanmış maç şartı
+  if (unappliedMatches.length < 3) return;
 
   // Maçları GK ve outfield olarak ayır
   const gkMatches = unappliedMatches.filter(mp => mp.position === "Kaleci");
@@ -238,8 +238,8 @@ export async function bulkReevaluateAll() {
   });
 
   for (const player of players) {
-    // En az 2 tamamlanmış maç şartı
-    if (player.matches.length < 2) continue;
+    // En az 3 tamamlanmış maç şartı
+    if (player.matches.length < 3) continue;
 
     const gkMatches = player.matches.filter(mp => mp.position === "Kaleci");
     const outfieldMatches = player.matches.filter(mp => mp.position !== "Kaleci");

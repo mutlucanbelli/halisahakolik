@@ -59,7 +59,7 @@ export default function PlayerEditModal({ player }: { player: any }) {
   const gkMatches = unappliedMatches.filter((m: any) => m.position === "Kaleci");
   const outfieldMatches = unappliedMatches.filter((m: any) => m.position !== "Kaleci");
 
-  const isEligible = unappliedCount >= 2;
+  const isEligible = unappliedCount >= 3;
 
   // Ortalama hesaplama yardımcısı
   const calcAvg = (arr: any[]) => arr.length > 0 ? arr.reduce((s: number, m: any) => s + m.earnedRating, 0) / arr.length : 0;
@@ -212,7 +212,7 @@ export default function PlayerEditModal({ player }: { player: any }) {
 
             {!isEligible && unappliedCount > 0 && (
               <p className="text-xs font-bold text-amber-700 bg-amber-100/80 p-2 rounded-lg text-center border border-amber-200">
-                ⚠️ Puan dağıtımı yapabilmek için en az 2 tamamlanmış maç gereklidir. (Mevcut: {unappliedCount} Maç)
+                ⚠️ Puan dağıtımı yapabilmek için en az 3 tamamlanmış maç gereklidir. (Mevcut: {unappliedCount} Maç)
               </p>
             )}
 

@@ -14,14 +14,14 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
     setMounted(true);
   }, []);
 
-  // Sadece en az 2 tamamlanmış maçı olan oyuncuları hesapla
+  // Sadece en az 3 tamamlanmış maçı olan oyuncuları hesapla
   const pendingPlayers = players
     .map(player => {
       const unappliedMatches = player.matches?.filter(
         (m: any) => !m.isApplied && m.earnedRating != null && m.match?.status === "COMPLETED"
       ) || [];
 
-      if (unappliedMatches.length < 2) return null;
+      if (unappliedMatches.length < 3) return null;
 
       const gkMatches = unappliedMatches.filter((m: any) => m.position === "Kaleci");
       const outfieldMatches = unappliedMatches.filter((m: any) => m.position !== "Kaleci");
@@ -218,7 +218,7 @@ export default function BulkDistributeModal({ players }: { players: any[] }) {
               </div>
               <h3 className="font-black text-slate-800 text-lg">Tüm Oyuncular Güncel!</h3>
               <p className="text-xs text-slate-500 mt-1 max-w-xs font-medium">
-                En az 2 tamamlanmış maçı olup puanı dağıtılmayı bekleyen oyuncu bulunmuyor.
+                En az 3 tamamlanmış maçı olup puanı dağıtılmayı bekleyen oyuncu bulunmuyor.
               </p>
             </div>
           )}
