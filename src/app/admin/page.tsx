@@ -3,10 +3,10 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { 
   Users, CalendarDays, Activity, PlusCircle, UserPlus, 
-  Trophy, Medal, ArrowRight, Clock, Calendar, Award
+  Trophy, Medal, ArrowRight, Clock, Calendar, Award, AlertTriangle
 } from "lucide-react";
 import Link from "next/link";
-import { getMatchAnalyst } from "@/lib/analyst";
+import { getMatchAnalyst, getMatchWorstAnalyst } from "@/lib/analyst";
 
 export default async function AdminDashboard() {
   const cookieStore = await cookies();
@@ -219,13 +219,26 @@ export default async function AdminDashboard() {
 
                 {(() => {
                   const analyst = match.votes ? getMatchAnalyst(match.votes) : null;
-                  if (!analyst) return null;
+                  const worstAnalyst = match.votes ? getMatchWorstAnalyst(match.votes) : null;
+                  if (!analyst && !worstAnalyst) return null;
                   return (
-                    <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-blue-700 bg-blue-50/60 px-2.5 py-1 rounded-lg">
-                      <span className="flex items-center gap-1">
-                        <Award size={13} className="text-blue-600" /> Analizci: {analyst.name}
-                      </span>
-                      <span className="text-[10px] text-blue-600 bg-white px-1.5 py-0.5 rounded border border-blue-100 shadow-2xs">±{analyst.avgDiff} Sapma</span>
+                    <div className="mt-3 pt-2 border-t border-slate-100 flex flex-col gap-1.5">
+                      {analyst && (
+                        <div className="flex items-center justify-between text-[11px] font-bold text-blue-700 bg-blue-50/60 px-2.5 py-1 rounded-lg">
+                          <span className="flex items-center gap-1">
+                            <Award size={13} className="text-blue-600" /> Analizci: {analyst.name}
+                          </span>
+                          <span className="text-[10px] text-blue-600 bg-white px-1.5 py-0.5 rounded border border-blue-100 shadow-2xs">{analyst.score} İsabet</span>
+                        </div>
+                      )}
+                      {worstAnalyst && worstAnalyst.voterId !== analyst?.voterId && (
+                        <div className="flex items-center justify-between text-[11px] font-bold text-rose-700 bg-rose-50/60 px-2.5 py-1 rounded-lg">
+                          <span className="flex items-center gap-1">
+                            <AlertTriangle size={13} className="text-rose-600" /> Karavana: {worstAnalyst.name}
+                          </span>
+                          <span className="text-[10px] text-rose-600 bg-white px-1.5 py-0.5 rounded border border-rose-100 shadow-2xs">{worstAnalyst.score} Karavana</span>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}

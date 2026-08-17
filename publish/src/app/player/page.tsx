@@ -2,14 +2,14 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { logoutPlayer } from "@/app/actions";
-import { User, LogOut, Medal, Clock, Shield, Activity, Swords, Star, Award } from "lucide-react";
+import { User, LogOut, Medal, Clock, Shield, Activity, Swords, Star, Award, AlertTriangle } from "lucide-react";
 import CountdownTimer from "./CountdownTimer";
 import LeaderboardClient from "./LeaderboardClient";
 import ChangePasswordModal from "./ChangePasswordModal";
 import LiveVoteClient from "./LiveVoteClient";
 import AutoRefreshClient from "./AutoRefreshClient";
 import PitchView from "@/components/PitchView";
-import { getMatchAnalyst } from "@/lib/analyst";
+import { getMatchAnalyst, getMatchWorstAnalyst } from "@/lib/analyst";
 
 export default async function PlayerDashboard() {
   const cookieStore = await cookies();
@@ -132,8 +132,9 @@ export default async function PlayerDashboard() {
     });
   }
 
-  // Son maçın Analizcisini hesapla (Oylarda genel ortalamaya en yakın tahmin veren)
+  // Son maçın Analizcisini ve En Kötü Tahmincisini hesapla
   const lastMatchAnalyst = (lastMatchPlayer && lastMatchPlayer.match.votes) ? getMatchAnalyst(lastMatchPlayer.match.votes) : null;
+  const lastMatchWorstAnalyst = (lastMatchPlayer && lastMatchPlayer.match.votes) ? getMatchWorstAnalyst(lastMatchPlayer.match.votes) : null;
 
   // Son maçta bana puan verenler
   let highestVoter = null;
@@ -292,7 +293,24 @@ export default async function PlayerDashboard() {
                     </div>
                   </div>
                   <div className="text-xs font-black text-blue-600 bg-white px-2 py-1 rounded shadow-sm">
-                    ±{lastMatchAnalyst.avgDiff} Sapma
+                    {lastMatchAnalyst.score} İsabet
+                  </div>
+                </div>
+              )}
+
+              {lastMatchWorstAnalyst && lastMatchWorstAnalyst.voterId !== lastMatchAnalyst?.voterId && (
+                <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-rose-100 rounded-full flex items-center justify-center text-rose-600">
+                      <AlertTriangle size={16} className="text-rose-600" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black uppercase text-rose-700 tracking-wider">En Kötü Tahminci</span>
+                      <span className="text-sm font-bold text-rose-900">{lastMatchWorstAnalyst.name}</span>
+                    </div>
+                  </div>
+                  <div className="text-xs font-black text-rose-600 bg-white px-2 py-1 rounded shadow-sm">
+                    {lastMatchWorstAnalyst.score} Karavana
                   </div>
                 </div>
               )}

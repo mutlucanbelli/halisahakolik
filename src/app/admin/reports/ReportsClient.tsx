@@ -1,9 +1,9 @@
 "use client";
 
-import { ClipboardList, Calendar, CheckCircle2, AlertCircle, Star, ArrowRight, Trash2, Award } from "lucide-react";
+import { ClipboardList, Calendar, CheckCircle2, AlertCircle, Star, ArrowRight, Trash2, Award, AlertTriangle } from "lucide-react";
 import { deleteMatch } from "../matches/actions";
 import Link from "next/link";
-import { getMatchAnalyst } from "@/lib/analyst";
+import { getMatchAnalyst, getMatchWorstAnalyst } from "@/lib/analyst";
 
 export default function ReportsClient({ matches }: { matches: any[] }) {
   return (
@@ -47,6 +47,7 @@ export default function ReportsClient({ matches }: { matches: any[] }) {
           // Katılımcı sayısı: herhangi bir oyuncuya oy veren max benzersiz kişi sayısı
           const uniqueVoters = match.votes ? new Set(match.votes.map((v: any) => v.voterId)).size : 0;
           const analyst = match.votes ? getMatchAnalyst(match.votes) : null;
+          const worstAnalyst = match.votes ? getMatchWorstAnalyst(match.votes) : null;
           
           return (
             <div key={match.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300">
@@ -80,15 +81,27 @@ export default function ReportsClient({ matches }: { matches: any[] }) {
                   </div>
                 </div>
 
-                {analyst && (
-                  <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-xl">
-                    <Award size={14} className="text-blue-600" />
-                    <div className="flex flex-col">
-                      <span className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">Haftanın Analizcisi</span>
-                      <span className="text-xs font-black text-blue-900">{analyst.name} <span className="text-[10px] text-blue-500 font-bold">(±{analyst.avgDiff})</span></span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {analyst && (
+                    <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-xl">
+                      <Award size={14} className="text-blue-600" />
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">Haftanın Analizcisi</span>
+                        <span className="text-xs font-black text-blue-900">{analyst.name} <span className="text-[10px] text-blue-500 font-bold">({analyst.score} İsabet)</span></span>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+
+                  {worstAnalyst && worstAnalyst.voterId !== analyst?.voterId && (
+                    <div className="flex items-center gap-2 bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-xl">
+                      <AlertTriangle size={14} className="text-rose-600" />
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-bold text-rose-600 uppercase tracking-wider">En Kötü Tahminci</span>
+                        <span className="text-xs font-black text-rose-900">{worstAnalyst.name} <span className="text-[10px] text-rose-500 font-bold">({worstAnalyst.score} Karavana)</span></span>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 <div className="text-right">
                   <span className="block text-[10px] font-bold text-gray-400 uppercase">Katılımcı</span>
