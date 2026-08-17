@@ -4,6 +4,7 @@ import { ArrowLeft, Trash2, Key } from "lucide-react";
 import PlayerEditModal from "../PlayerEditModal";
 import { deletePlayer } from "../actions";
 import ResetPasswordBtn from "../ResetPasswordBtn";
+import PlayerFormChart from "@/components/PlayerFormChart";
 
 export default async function PlayerDetailsPage({ params }: { params: Promise<{ playerId: string }> }) {
   const { playerId } = await params;
@@ -21,6 +22,24 @@ export default async function PlayerDetailsPage({ params }: { params: Promise<{ 
   if (!player) {
     return <div className="w-full max-w-4xl mx-auto px-4 py-12 text-center text-gray-500">Oyuncu bulunamadı.</div>;
   }
+
+  // Son 5 maç form grafiği verisi
+  const playerFormMatches = await prisma.matchPlayer.findMany({
+    where: {
+      playerId,
+      earnedRating: { not: null },
+      match: { status: "COMPLETED" }
+    },
+    orderBy: { match: { date: "asc" } },
+    take: 5,
+    include: { match: true }
+  });
+
+  const formChartData = playerFormMatches.map(mp => ({
+    date: new Date(mp.match.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', timeZone: 'Europe/Istanbul' }),
+    earnedRating: mp.earnedRating || 50,
+    position: mp.position
+  }));
 
 
 
@@ -145,6 +164,9 @@ export default async function PlayerDetailsPage({ params }: { params: Promise<{ 
           )}
         </div>
       </div>
+
+      {/* Son 5 Maç Form Grafiği */}
+      <PlayerFormChart matches={formChartData} />
     </div>
   );
 }

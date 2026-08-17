@@ -12,6 +12,7 @@ import PitchView from "@/components/PitchView";
 import { getMatchAnalyst, getMatchWorstAnalyst } from "@/lib/analyst";
 import { getAwardBadges } from "@/lib/badges";
 import AwardBadgesSection from "@/components/AwardBadgesSection";
+import PlayerFormChart from "@/components/PlayerFormChart";
 
 export default async function PlayerDashboard() {
   const cookieStore = await cookies();
@@ -184,6 +185,24 @@ export default async function PlayerDashboard() {
   const myRank = allPlayers.findIndex(p => p.id === player.id) + 1;
   const awardBadges = await getAwardBadges();
 
+  // Son 5 maç form grafiği verisi
+  const playerFormMatches = await prisma.matchPlayer.findMany({
+    where: {
+      playerId: player.id,
+      earnedRating: { not: null },
+      match: { status: "COMPLETED" }
+    },
+    orderBy: { match: { date: "asc" } },
+    take: 5,
+    include: { match: true }
+  });
+
+  const formChartData = playerFormMatches.map(mp => ({
+    date: new Date(mp.match.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', timeZone: 'Europe/Istanbul' }),
+    earnedRating: mp.earnedRating || 50,
+    position: mp.position
+  }));
+
   return (
     <div className="w-full flex flex-col p-4 sm:p-6 animate-fade-in pb-12 gap-8">
       <AutoRefreshClient hasVoting={!!votingMatch} />
@@ -239,6 +258,9 @@ export default async function PlayerDashboard() {
 
       {/* Haftanın Unvanları & Ödül Kartları */}
       <AwardBadgesSection badges={awardBadges} />
+
+      {/* Son 5 Maç Form Grafiği */}
+      <PlayerFormChart matches={formChartData} />
 
       {/* Son Maç Puanları */}
       <section className="flex flex-col gap-3">
