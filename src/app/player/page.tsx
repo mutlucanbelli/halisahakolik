@@ -293,7 +293,7 @@ export default async function PlayerDashboard() {
                     </div>
                   </div>
                   <div className="text-xs font-black text-blue-600 bg-white px-2 py-1 rounded shadow-sm">
-                    {lastMatchAnalyst.score} İsabet
+                    {lastMatchAnalyst.score}/{lastMatchAnalyst.voteCount} İsabet
                   </div>
                 </div>
               )}
@@ -310,7 +310,7 @@ export default async function PlayerDashboard() {
                     </div>
                   </div>
                   <div className="text-xs font-black text-rose-600 bg-white px-2 py-1 rounded shadow-sm">
-                    {lastMatchWorstAnalyst.score} Karavana
+                    {lastMatchWorstAnalyst.score}/{lastMatchWorstAnalyst.voteCount} Karavana
                   </div>
                 </div>
               )}

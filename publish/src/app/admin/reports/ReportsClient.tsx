@@ -87,7 +87,7 @@ export default function ReportsClient({ matches }: { matches: any[] }) {
                       <Award size={14} className="text-blue-600" />
                       <div className="flex flex-col">
                         <span className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">Haftanın Analizcisi</span>
-                        <span className="text-xs font-black text-blue-900">{analyst.name} <span className="text-[10px] text-blue-500 font-bold">({analyst.score} İsabet)</span></span>
+                        <span className="text-xs font-black text-blue-900">{analyst.name} <span className="text-[10px] text-blue-500 font-bold">({analyst.score}/{analyst.voteCount} İsabet)</span></span>
                       </div>
                     </div>
                   )}
@@ -97,7 +97,7 @@ export default function ReportsClient({ matches }: { matches: any[] }) {
                       <AlertTriangle size={14} className="text-rose-600" />
                       <div className="flex flex-col">
                         <span className="text-[9px] font-bold text-rose-600 uppercase tracking-wider">En Kötü Tahminci</span>
-                        <span className="text-xs font-black text-rose-900">{worstAnalyst.name} <span className="text-[10px] text-rose-500 font-bold">({worstAnalyst.score} Karavana)</span></span>
+                        <span className="text-xs font-black text-rose-900">{worstAnalyst.name} <span className="text-[10px] text-rose-500 font-bold">({worstAnalyst.score}/{worstAnalyst.voteCount} Karavana)</span></span>
                       </div>
                     </div>
                   )}

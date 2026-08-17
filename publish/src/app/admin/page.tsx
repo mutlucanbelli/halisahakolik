@@ -228,7 +228,7 @@ export default async function AdminDashboard() {
                           <span className="flex items-center gap-1">
                             <Award size={13} className="text-blue-600" /> Analizci: {analyst.name}
                           </span>
-                          <span className="text-[10px] text-blue-600 bg-white px-1.5 py-0.5 rounded border border-blue-100 shadow-2xs">{analyst.score} İsabet</span>
+                          <span className="text-[10px] text-blue-600 bg-white px-1.5 py-0.5 rounded border border-blue-100 shadow-2xs">{analyst.score}/{analyst.voteCount} İsabet</span>
                         </div>
                       )}
                       {worstAnalyst && worstAnalyst.voterId !== analyst?.voterId && (
@@ -236,7 +236,7 @@ export default async function AdminDashboard() {
                           <span className="flex items-center gap-1">
                             <AlertTriangle size={13} className="text-rose-600" /> Karavana: {worstAnalyst.name}
                           </span>
-                          <span className="text-[10px] text-rose-600 bg-white px-1.5 py-0.5 rounded border border-rose-100 shadow-2xs">{worstAnalyst.score} Karavana</span>
+                          <span className="text-[10px] text-rose-600 bg-white px-1.5 py-0.5 rounded border border-rose-100 shadow-2xs">{worstAnalyst.score}/{worstAnalyst.voteCount} Karavana</span>
                         </div>
                       )}
                     </div>
