@@ -1,0 +1,140 @@
+@using System.Linq
+@using HalisahaMvc.Helpers
+@using HalisahaMvc.Models.Entities
+@model HalisahaMvc.Models.ViewModels.PlayerDetailViewModel
+@{
+    ViewBag.Title = Model.Player.Name;
+    ViewBag.WideLayout = true;
+    var player = Model.Player;
+    string ratingClass = player.Rating >= 80 ? "rating-amber" : player.Rating < 60 ? "rating-rose" : player.Rating < 70 ? "rating-sky" : "rating-emerald";
+}
+<div class="admin-player-detail">
+    <header class="dashboard-header">
+        <h1>@player.Name</h1>
+        <a href="@Url.Action("Index")">&larr; Oyuncular</a>
+    </header>
+
+    @if (Model.NewlyResetPassword != null)
+    {
+        <div class="new-password-banner">
+            <strong>Yeni Şifre:</strong> <code id="new-password-value">@Model.NewlyResetPassword</code>
+            <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('new-password-value').textContent)">Kopyala</button>
+        </div>
+    }
+
+    <section class="profile-card @ratingClass">
+        <h2>@player.Name</h2>
+        <p>Kullanıcı Adı: @player.Username</p>
+        <p>@player.Positions</p>
+        <span class="ovr-value">@Math.Ceiling(player.Rating) OVR</span>
+    </section>
+
+    <div class="profile-actions">
+        <button type="button" id="edit-player-toggle">Düzenle</button>
+        @using (Html.BeginForm("ResetPassword", "AdminPlayers", new { id = player.Id }, FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <button type="submit" onclick="return confirm('Şifreyi sıfırlamak istediğinize emin misiniz?');">Şifreyi Sıfırla</button>
+        }
+        @using (Html.BeginForm("Delete", "AdminPlayers", new { id = player.Id }, FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <button type="submit" onclick="return confirm('Bu oyuncuyu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.');">Sil</button>
+        }
+    </div>
+
+    <div class="modal-overlay" id="edit-player-modal" style="display:none">
+        <div class="modal-card">
+            <h2>Oyuncuyu Düzenle</h2>
+            @using (Html.BeginForm("Edit", "AdminPlayers", new { id = player.Id }, FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                @Html.Partial("_PlayerPositionFields", player)
+                <button type="submit">Kaydet</button>
+            }
+        </div>
+    </div>
+
+    <section class="position-rating-grid">
+        <div><span>GK</span><span>@player.RatingGK.ToString("0.0")</span></div>
+        <div><span>DEF</span><span>@player.RatingDEF.ToString("0.0")</span></div>
+        <div><span>MID</span><span>@player.RatingMID.ToString("0.0")</span></div>
+        <div><span>FWD</span><span>@player.RatingFWD.ToString("0.0")</span></div>
+    </section>
+
+    @Html.PlayerFormChart(Model.FormChartData)
+
+    <section class="unapplied-distribution-card">
+        <h3>Dağıtılmamış Maç Puanları</h3>
+        @if (Model.UnappliedGkCount + Model.UnappliedOutfieldCount == 0)
+        {
+            <p class="empty-state">Dağıtılacak yeni maç puanı yok.</p>
+        }
+        else
+        {
+            <div class="distribution-body">
+                <p>Kaleci maçı: @Model.UnappliedGkCount, Alan oyuncusu maçı: @Model.UnappliedOutfieldCount (minimum 3 gerekir)</p>
+                @{
+                    bool eligible = Model.UnappliedGkCount + Model.UnappliedOutfieldCount >= 3;
+                    bool gkEligible = eligible && Model.UnappliedGkCount > 0;
+                    bool outfieldEligible = eligible && Model.UnappliedOutfieldCount > 0;
+                }
+                @using (Html.BeginForm("Distribute", "AdminPlayers", new { id = player.Id, type = "gk" }, FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+                    if (gkEligible)
+                    {
+                        <button type="submit">Kaleci OVR'yi Dağıt</button>
+                    }
+                    else
+                    {
+                        <button type="submit" disabled="disabled">Kaleci OVR'yi Dağıt</button>
+                    }
+                }
+                @using (Html.BeginForm("Distribute", "AdminPlayers", new { id = player.Id, type = "outfield" }, FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+                    if (outfieldEligible)
+                    {
+                        <button type="submit">Alan Oyuncusu OVR'yi Dağıt</button>
+                    }
+                    else
+                    {
+                        <button type="submit" disabled="disabled">Alan Oyuncusu OVR'yi Dağıt</button>
+                    }
+                }
+            </div>
+        }
+    </section>
+
+    <section class="match-history-section">
+        <h3>Maç Geçmişi</h3>
+        @if (!Model.MatchHistory.Any())
+        {
+            <p class="empty-state">Henüz maç geçmişi yok.</p>
+        }
+        else
+        {
+            <div class="match-history-list">
+                @foreach (var h in Model.MatchHistory)
+                {
+                    <div class="match-history-row">
+                        <span>@h.Date.ToString("d MMMM yyyy", new System.Globalization.CultureInfo("tr-TR"))</span>
+                        <span>@h.Status</span>
+                        <span>@h.Position</span>
+                        <span>@(h.EarnedRating.HasValue ? Math.Ceiling(h.EarnedRating.Value).ToString() : "-")</span>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+</div>
+
+@section scripts {
+    <script>
+        document.getElementById('edit-player-toggle').addEventListener('click', function () {
+            var modal = document.getElementById('edit-player-modal');
+            modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+        });
+    </script>
+}

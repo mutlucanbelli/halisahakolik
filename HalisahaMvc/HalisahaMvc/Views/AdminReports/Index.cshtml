@@ -1,0 +1,52 @@
+@using System.Linq
+@model List<HalisahaMvc.Models.ViewModels.ReportMatchSummaryViewModel>
+@{
+    ViewBag.Title = "Raporlar";
+    ViewBag.WideLayout = true;
+}
+<div class="admin-reports-page">
+    <header class="dashboard-header">
+        <h1>Raporlar</h1>
+    </header>
+
+    @if (!Model.Any())
+    {
+        <p class="empty-state">Henüz tamamlanmış maç yok.</p>
+    }
+    else
+    {
+        <div class="reports-list">
+            @foreach (var rm in Model)
+            {
+                <div class="report-card">
+                    <div class="report-card-header">
+                        <span>@rm.Match.Date.ToString("d MMMM yyyy", new System.Globalization.CultureInfo("tr-TR"))</span>
+                        @if (rm.MvpName != null)
+                        {
+                            <span>MVP: @rm.MvpName (@rm.MvpRating)</span>
+                        }
+                        <span>@rm.UniqueVoterCount oy veren</span>
+                    </div>
+                    <div class="report-card-badges">
+                        @if (rm.Analyst != null)
+                        {
+                            <span class="report-badge">Analizci: @rm.Analyst.Name</span>
+                        }
+                        @if (rm.Worst != null)
+                        {
+                            <span class="report-badge">Karavana: @rm.Worst.Name</span>
+                        }
+                    </div>
+                    <div class="report-card-actions">
+                        <a href="@Url.Action("Detail", new { matchId = rm.Match.Id })">Detaylı İncele</a>
+                        @using (Html.BeginForm("Delete", "AdminReports", new { matchId = rm.Match.Id }, FormMethod.Post))
+                        {
+                            @Html.AntiForgeryToken()
+                            <button type="submit" onclick="return confirm('Bu maçı silmek istediğinize emin misiniz?');">Maçı Sil</button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

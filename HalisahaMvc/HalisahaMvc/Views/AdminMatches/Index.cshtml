@@ -1,0 +1,265 @@
+@using System.Linq
+@using HalisahaMvc.Services
+@model HalisahaMvc.Models.ViewModels.AdminMatchesViewModel
+@{
+    ViewBag.Title = "Maçlar";
+    ViewBag.WideLayout = true;
+}
+<div class="admin-matches-page">
+    <header class="dashboard-header">
+        <h1>Maçlar</h1>
+    </header>
+
+    @if (Model.CompletedMvpName != null)
+    {
+        <div class="mvp-banner">
+            <strong>Maç Tamamlandı! MVP:</strong> @Model.CompletedMvpName (@Model.CompletedMvpRating)
+        </div>
+    }
+
+    <section class="match-form-card">
+        <h3>Yeni Maç Oluştur</h3>
+        <div class="match-form-datetime">
+            <input type="date" id="mf-date" />
+            <select id="mf-hour">
+                @for (int h = 0; h < 24; h++)
+                {
+                    var hh = h.ToString("00") + ":00";
+                    if (h == 20)
+                    {
+                        <option value="@hh" selected="selected">@hh</option>
+                    }
+                    else
+                    {
+                        <option value="@hh">@hh</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="match-form-players">
+            @foreach (var p in Model.AllPlayers)
+            {
+                var positions = p.Positions.Split(',').Select(s => s.Trim()).ToList();
+                var mainPos = PositionHelper.MainPosition(p.Positions);
+                <div class="match-form-player-row">
+                    <label>
+                        <input type="checkbox" class="mf-player-checkbox" value="@p.Id" data-name="@p.Name" />
+                        @p.Name (@Math.Ceiling(p.Rating))
+                    </label>
+                    <select class="mf-player-position" data-player="@p.Id">
+                        @foreach (var pos in positions)
+                        {
+                            if (pos == mainPos)
+                            {
+                                <option value="@pos" selected="selected">@pos</option>
+                            }
+                            else
+                            {
+                                <option value="@pos">@pos</option>
+                            }
+                        }
+                    </select>
+                </div>
+            }
+        </div>
+
+        <button type="button" id="mf-generate-draft">Kadroları Dağıt ve Önizle</button>
+
+        <div id="mf-preview" style="display:none">
+            <div class="mf-preview-teams">
+                <div class="mf-team-col" id="mf-team-a"><h4>Takım A</h4></div>
+                <div class="mf-team-col" id="mf-team-b"><h4>Takım B</h4></div>
+            </div>
+            <button type="button" id="mf-submit">Maçı Oluştur</button>
+        </div>
+
+        @using (Html.BeginForm("Create", "AdminMatches", FormMethod.Post, new { id = "mf-create-form", style = "display:none" }))
+        {
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="date" id="mf-hidden-date" />
+            <input type="hidden" name="hour" id="mf-hidden-hour" />
+            <div id="mf-hidden-fields"></div>
+        }
+    </section>
+
+    <section class="match-cards-section">
+        @if (!Model.Matches.Any())
+        {
+            <p class="empty-state">Bekleyen maç yok.</p>
+        }
+        else
+        {
+            <div class="match-cards-list">
+            @foreach (var card in Model.Matches)
+            {
+                <div class="match-ticket-card">
+                    <div class="match-ticket-header">
+                        <span>@card.Match.Date.ToString("d MMMM yyyy HH:mm", new System.Globalization.CultureInfo("tr-TR"))</span>
+                        <span class="match-status-badge">@card.Match.Status</span>
+                    </div>
+                    <div class="match-ticket-teams">
+                        <div>
+                            <h4>Takım A (@card.TeamAAvg)</h4>
+                            @foreach (var rp in card.TeamA)
+                            {
+                                <div class="roster-row">@rp.Name — @rp.MatchPosition — @Math.Ceiling(rp.Rating)</div>
+                            }
+                        </div>
+                        <div>
+                            <h4>Takım B (@card.TeamBAvg)</h4>
+                            @foreach (var rp in card.TeamB)
+                            {
+                                <div class="roster-row">@rp.Name — @rp.MatchPosition — @Math.Ceiling(rp.Rating)</div>
+                            }
+                        </div>
+                    </div>
+
+                    @if (card.Match.Status == "PENDING")
+                    {
+                        <div class="match-ticket-actions">
+                            @if (card.CanStartVoting)
+                            {
+                                <div class="start-voting-wrap">
+                                    @using (Html.BeginForm("StartVoting", "AdminMatches", new { id = card.Match.Id }, FormMethod.Post))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit">Canlı Oylamayı Başlat</button>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="voting-locked-notice">Oylama @card.VotingUnlockTime.ToString("HH:mm") itibarıyla açılacak</span>
+                            }
+                            @using (Html.BeginForm("Cancel", "AdminMatches", new { id = card.Match.Id }, FormMethod.Post))
+                            {
+                                @Html.AntiForgeryToken()
+                                <button type="submit" onclick="return confirm('Bu maçı iptal etmek istediğinize emin misiniz?');">İptal Et</button>
+                            }
+                        </div>
+                    }
+                    else if (card.Match.Status == "VOTING")
+                    {
+                        <div class="match-ticket-voting">
+                            <a href="@Url.Action("Index")" class="refresh-link">Yenile (Oy Sayısı)</a>
+                            <div class="voting-target-grid">
+                                @foreach (var rp in card.TeamA.Concat(card.TeamB))
+                                {
+                                    var isActive = card.Match.ActiveVotePlayerId == rp.Id;
+                                    var hasCount = card.LiveVoteCounts.ContainsKey(rp.Id);
+                                    var voteCount = hasCount ? card.LiveVoteCounts[rp.Id].Count : 0;
+                                    var voteAvg = hasCount ? Math.Ceiling(card.LiveVoteCounts[rp.Id].Avg) : 0;
+                                    <div class="voting-target-cell">
+                                        @using (Html.BeginForm("SetActiveVotePlayer", "AdminMatches", new { id = card.Match.Id }, FormMethod.Post))
+                                        {
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="playerId" value="@(isActive ? "" : rp.Id)" />
+                                            if (isActive)
+                                            {
+                                                <button type="submit" class="voting-target-active">@rp.Name (Aktif)</button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit">@rp.Name</button>
+                                            }
+                                        }
+                                        <small>@voteCount oy, ort. @voteAvg</small>
+                                    </div>
+                                }
+                            </div>
+                            @using (Html.BeginForm("Complete", "AdminMatches", new { id = card.Match.Id }, FormMethod.Post))
+                            {
+                                @Html.AntiForgeryToken()
+                                <button type="submit" onclick="return confirm('Maçı tamamlamak istediğinize emin misiniz?');">Maçı Tamamla</button>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            </div>
+        }
+    </section>
+</div>
+
+@section scripts {
+    <script>
+        (function () {
+            var draftState = { teamA: [], teamB: [] };
+
+            function afToken() {
+                return document.querySelector('#mf-create-form input[name="__RequestVerificationToken"]').value;
+            }
+
+            function renderPreview() {
+                function renderTeam(el, title, list, otherKey) {
+                    el.innerHTML = '<h4>' + title + '</h4>';
+                    list.forEach(function (p) {
+                        var row = document.createElement('div');
+                        row.className = 'mf-preview-row';
+                        row.textContent = p.name + ' — ' + p.position + ' — ' + p.rating;
+                        var btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.textContent = otherKey === 'teamB' ? '→ B' : '→ A';
+                        btn.addEventListener('click', function () {
+                            draftState.teamA = draftState.teamA.filter(function (x) { return x.id !== p.id; });
+                            draftState.teamB = draftState.teamB.filter(function (x) { return x.id !== p.id; });
+                            draftState[otherKey].push(p);
+                            renderPreview();
+                        });
+                        row.appendChild(btn);
+                        el.appendChild(row);
+                    });
+                }
+                renderTeam(document.getElementById('mf-team-a'), 'Takım A', draftState.teamA, 'teamB');
+                renderTeam(document.getElementById('mf-team-b'), 'Takım B', draftState.teamB, 'teamA');
+            }
+
+            document.getElementById('mf-generate-draft').addEventListener('click', function () {
+                var ids = [], positions = [];
+                document.querySelectorAll('.mf-player-checkbox:checked').forEach(function (cb) {
+                    ids.push(cb.value);
+                    var sel = document.querySelector('.mf-player-position[data-player="' + cb.value + '"]');
+                    positions.push(sel ? sel.value : '');
+                });
+                if (ids.length < 2) { alert('En az 2 oyuncu seçmelisiniz.'); return; }
+
+                var body = new URLSearchParams();
+                ids.forEach(function (id) { body.append('playerIds', id); });
+                positions.forEach(function (p) { body.append('positions', p); });
+                body.append('__RequestVerificationToken', afToken());
+
+                fetch('@Url.Action("Draft")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString()
+                }).then(function (r) { return r.json(); }).then(function (data) {
+                    if (data.error) { alert(data.error); return; }
+                    draftState.teamA = data.teamA;
+                    draftState.teamB = data.teamB;
+                    document.getElementById('mf-preview').style.display = 'block';
+                    renderPreview();
+                });
+            });
+
+            document.getElementById('mf-submit').addEventListener('click', function () {
+                document.getElementById('mf-hidden-date').value = document.getElementById('mf-date').value;
+                document.getElementById('mf-hidden-hour').value = document.getElementById('mf-hour').value;
+
+                var container = document.getElementById('mf-hidden-fields');
+                container.innerHTML = '';
+                function addHidden(name, value) {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = name;
+                    input.value = value;
+                    container.appendChild(input);
+                }
+                draftState.teamA.forEach(function (p) { addHidden('teamAIds', p.id); addHidden('teamAPositions', p.position); });
+                draftState.teamB.forEach(function (p) { addHidden('teamBIds', p.id); addHidden('teamBPositions', p.position); });
+
+                document.getElementById('mf-create-form').submit();
+            });
+        })();
+    </script>
+}

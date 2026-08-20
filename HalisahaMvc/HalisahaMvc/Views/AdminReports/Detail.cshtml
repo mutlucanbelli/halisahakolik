@@ -1,0 +1,76 @@
+@using System.Linq
+@model HalisahaMvc.Models.ViewModels.ReportDetailViewModel
+@{
+    ViewBag.Title = "Maç Raporu";
+    ViewBag.WideLayout = true;
+}
+<div class="admin-report-detail">
+    <header class="dashboard-header">
+        <h1>Maç Raporu</h1>
+        <a href="@Url.Action("Index")">&larr; Raporlar</a>
+    </header>
+
+    <p>@Model.Match.Date.ToString("d MMMM yyyy HH:mm", new System.Globalization.CultureInfo("tr-TR"))</p>
+
+    <div class="report-hero-cards">
+        @if (Model.Analyst != null)
+        {
+            <div class="banner-blue"><strong>Analizci</strong><span>@Model.Analyst.Name</span><small>@(Model.Analyst.Score + "/" + Model.Analyst.VoteCount) İsabet (±@Model.Analyst.AvgDiff)</small></div>
+        }
+        @if (Model.Worst != null)
+        {
+            <div class="banner-rose"><strong>Karavana</strong><span>@Model.Worst.Name</span><small>@(Model.Worst.Score + "/" + Model.Worst.VoteCount) Karavana (±@Model.Worst.AvgDiff)</small></div>
+        }
+        @if (Model.Hero != null)
+        {
+            <div class="banner-cyan"><strong>Sürpriz Kahraman</strong><span>@Model.Hero.Name</span><small>+@Model.Hero.Diff OVR</small></div>
+        }
+    </div>
+
+    <div class="player-report-accordion">
+        @foreach (var row in Model.Players)
+        {
+            <details class="player-report-item">
+                <summary>
+                    @row.Player.Name — @(row.EarnedRating.HasValue ? Math.Ceiling(row.EarnedRating.Value).ToString() : "-")
+                </summary>
+                <div class="player-report-body">
+                    <div class="votes-received">
+                        <h5>Alınan Oylar</h5>
+                        @if (!row.VotesReceived.Any())
+                        {
+                            <p class="empty-state">Oy alınmadı.</p>
+                        }
+                        else
+                        {
+                            <div class="vote-rows">
+                                @foreach (var v in row.VotesReceived)
+                                {
+                                    var cls = v.IsMax ? "vote-row-max" : v.IsMin ? "vote-row-min" : v.IsClosestToAvg ? "vote-row-closest" : "";
+                                    <div class="vote-row @cls">@v.OtherPlayerName: @v.Rating</div>
+                                }
+                            </div>
+                        }
+                    </div>
+                    <div class="votes-given">
+                        <h5>Verilen Oylar</h5>
+                        @if (!row.VotesGiven.Any())
+                        {
+                            <p class="empty-state">Oy verilmedi.</p>
+                        }
+                        else
+                        {
+                            <div class="vote-rows">
+                                @foreach (var v in row.VotesGiven)
+                                {
+                                    var teamCls = v.OtherPlayerTeam == "A" ? "team-dot-a" : v.OtherPlayerTeam == "B" ? "team-dot-b" : "";
+                                    <div class="vote-row"><span class="team-dot @teamCls"></span>@v.OtherPlayerName: @v.Rating</div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </details>
+        }
+    </div>
+</div>

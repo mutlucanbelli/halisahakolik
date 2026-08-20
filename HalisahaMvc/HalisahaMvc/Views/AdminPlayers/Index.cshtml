@@ -1,0 +1,100 @@
+@using System.Linq
+@using HalisahaMvc.Services
+@model HalisahaMvc.Models.ViewModels.PlayerListViewModel
+@{
+    ViewBag.Title = "Oyuncular";
+    ViewBag.WideLayout = true;
+}
+<div class="admin-players-page">
+    <header class="dashboard-header">
+        <h1>Oyuncular</h1>
+        <button type="button" id="new-player-toggle">Yeni Oyuncu Ekle</button>
+    </header>
+
+    @if (TempData["PlayerFormError"] != null)
+    {
+        <div class="error-banner">@TempData["PlayerFormError"]</div>
+    }
+
+    <div class="modal-overlay" id="new-player-modal" style="display:none">
+        <div class="modal-card">
+            <h2>Yeni Oyuncu Ekle</h2>
+            @using (Html.BeginForm("Create", "AdminPlayers", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                @Html.Partial("_PlayerPositionFields", (HalisahaMvc.Models.Entities.Player)null, new ViewDataDictionary())
+                <button type="submit">Kaydet</button>
+            }
+        </div>
+    </div>
+
+    <section class="bulk-distribute-card">
+        @using (Html.BeginForm("BulkDistribute", "AdminPlayers", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <button type="submit" onclick="return confirm('Tüm uygun oyuncuların OVR\'lerini dağıtmak istediğinize emin misiniz?');">Toplu Puan Dağıtımı</button>
+        }
+    </section>
+
+    <div class="player-list-controls">
+        <input type="text" id="player-search" placeholder="Ara..." />
+        <select id="player-sort">
+            <option value="newest">En Yeni</option>
+            <option value="rating-desc">OVR (Yüksek → Düşük)</option>
+            <option value="rating-asc">OVR (Düşük → Yüksek)</option>
+        </select>
+    </div>
+
+    @if (!Model.Players.Any())
+    {
+        <p class="empty-state">Henüz oyuncu eklenmedi.</p>
+    }
+    else
+    {
+        <div id="player-list" class="player-list">
+            @foreach (var p in Model.Players)
+            {
+                <a class="player-card" href="@Url.Action("Detail", new { id = p.Id })"
+                   data-name="@p.Name.ToLowerInvariant()" data-position="@p.Positions.ToLowerInvariant()"
+                   data-rating="@p.Rating" data-created="@p.CreatedAt.Ticks">
+                    <span class="player-card-initial">@p.Name.Substring(0, 1)</span>
+                    <span class="player-card-name">@p.Name</span>
+                    <span class="player-card-position">@PositionHelper.MainPosition(p.Positions)</span>
+                    <span class="player-card-ovr">@Math.Ceiling(p.Rating) OVR</span>
+                </a>
+            }
+        </div>
+    }
+</div>
+
+@section scripts {
+    <script>
+        document.getElementById('new-player-toggle').addEventListener('click', function () {
+            var modal = document.getElementById('new-player-modal');
+            modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+        });
+
+        (function () {
+            var search = document.getElementById('player-search');
+            var sort = document.getElementById('player-sort');
+            var list = document.getElementById('player-list');
+            if (!list) return;
+            var cards = Array.prototype.slice.call(list.children);
+
+            function apply() {
+                var q = search.value.toLowerCase();
+                cards.forEach(function (c) {
+                    var match = c.getAttribute('data-name').indexOf(q) !== -1 || c.getAttribute('data-position').indexOf(q) !== -1;
+                    c.style.display = match ? '' : 'none';
+                });
+                var sorted = cards.slice();
+                if (sort.value === 'rating-desc') sorted.sort(function (a, b) { return b.getAttribute('data-rating') - a.getAttribute('data-rating'); });
+                else if (sort.value === 'rating-asc') sorted.sort(function (a, b) { return a.getAttribute('data-rating') - b.getAttribute('data-rating'); });
+                else sorted.sort(function (a, b) { return b.getAttribute('data-created') - a.getAttribute('data-created'); });
+                sorted.forEach(function (c) { list.appendChild(c); });
+            }
+            search.addEventListener('input', apply);
+            sort.addEventListener('change', apply);
+        })();
+    </script>
+}

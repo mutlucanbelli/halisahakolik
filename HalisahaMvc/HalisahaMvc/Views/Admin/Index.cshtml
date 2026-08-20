@@ -1,0 +1,127 @@
+@using System.Linq
+@model HalisahaMvc.Models.ViewModels.AdminDashboardViewModel
+@{
+    ViewBag.Title = "Yönetici Paneli";
+    ViewBag.WideLayout = true;
+}
+<div class="admin-dashboard">
+    <header class="dashboard-header">
+        <h1>Yönetici Paneli</h1>
+    </header>
+
+    <div class="stat-cards">
+        <div class="stat-card"><span class="stat-value">@Model.PlayerCount</span><span class="stat-label">Oyuncu</span></div>
+        <div class="stat-card"><span class="stat-value">@Model.PendingMatchCount</span><span class="stat-label">Bekleyen Maç</span></div>
+        <div class="stat-card stat-card-wide"><span class="stat-value">@Model.CompletedMatchCount</span><span class="stat-label">Tamamlanan Maç</span></div>
+    </div>
+
+    @if (Model.AwardBadges.Any())
+    {
+        <section class="award-badges">
+            <h3>Haftanın Unvanları &amp; Ödülleri</h3>
+            <div class="award-badges-grid">
+                @foreach (var badge in Model.AwardBadges)
+                {
+                    <div class="award-badge award-badge-@badge.BadgeType">
+                        <strong>@badge.Title</strong>
+                        <span>@badge.PlayerName</span>
+                        <small>@badge.Detail</small>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    <section class="next-match-card">
+        <h3>Yaklaşan Maç</h3>
+        @if (Model.NextMatch == null)
+        {
+            <p class="empty-state">Bekleyen maç yok.</p>
+        }
+        else
+        {
+            <a href="@Url.Action("Index", "AdminMatches")" class="next-match-link">
+                <div class="next-match-summary">
+                    <span>@Model.NextMatch.Date.ToString("d MMMM yyyy HH:mm", new System.Globalization.CultureInfo("tr-TR"))</span>
+                    <span>@Model.NextMatchTeamA.Count + @Model.NextMatchTeamB.Count oyuncu</span>
+                </div>
+            </a>
+        }
+    </section>
+
+    <section class="leaderboard-section">
+        <h3>Sıralama (İlk 5)</h3>
+        <div id="leaderboard-list">
+            @{ int rank = 0; }
+            @foreach (var entry in Model.TopPlayers)
+            {
+                rank++;
+                <a href="@Url.Action("Detail", "AdminPlayers", new { id = entry.Id })" class="leaderboard-row leaderboard-rank-@rank">
+                    <span class="leaderboard-rank">#@rank</span>
+                    <span>@entry.Name</span>
+                    <span>@entry.MainPosition</span>
+                    <span>@Math.Ceiling(entry.Rating)</span>
+                </a>
+            }
+        </div>
+    </section>
+
+    <section class="recent-matches-section">
+        <h3>Son Oynanan Maçlar</h3>
+        @if (!Model.RecentMatches.Any())
+        {
+            <p class="empty-state">Henüz tamamlanmış maç yok.</p>
+        }
+        else
+        {
+            <div class="recent-matches-list">
+                @foreach (var rm in Model.RecentMatches)
+                {
+                    <div class="recent-match-card">
+                        <div class="recent-match-header">
+                            <span>@rm.Match.Date.ToString("d MMMM yyyy", new System.Globalization.CultureInfo("tr-TR"))</span>
+                            <span>Takım A: @rm.TeamAAvg — Takım B: @rm.TeamBAvg</span>
+                        </div>
+                        @if (rm.Analyst != null)
+                        {
+                            <div class="recent-match-badge">Analizci: @rm.Analyst.Name (@rm.Analyst.Score/@rm.Analyst.VoteCount)</div>
+                        }
+                        @if (rm.Worst != null)
+                        {
+                            <div class="recent-match-badge">Karavana: @rm.Worst.Name (@rm.Worst.Score/@rm.Worst.VoteCount)</div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <div class="admin-quick-actions">
+        <a href="@Url.Action("Index", "AdminMatches")">Maçlar</a>
+        <a href="@Url.Action("Index", "AdminPlayers")">Oyuncular</a>
+        <a href="@Url.Action("Index", "AdminReports")">Raporlar</a>
+    </div>
+
+    <section class="danger-zone">
+        <h3>Tehlikeli Bölge</h3>
+        @using (Html.BeginForm("Reset", "Admin", FormMethod.Post, new { id = "reset-form" }))
+        {
+            @Html.AntiForgeryToken()
+            <button type="submit" id="reset-db-btn">Tüm Verileri Sıfırla</button>
+        }
+    </section>
+</div>
+
+@section scripts {
+    <script>
+        document.getElementById('reset-form').addEventListener('submit', function (e) {
+            if (!confirm('TÜM maç ve oy geçmişi silinecek, oyuncu güçleri 50\'ye sıfırlanacak. Oyuncular silinmeyecek. Emin misiniz?')) {
+                e.preventDefault();
+                return;
+            }
+            if (!confirm('Bu işlem GERİ ALINAMAZ. Kesinlikle emin misiniz?')) {
+                e.preventDefault();
+            }
+        });
+    </script>
+}

@@ -1,0 +1,41 @@
+@using System.Linq
+@using HalisahaMvc.Models.ViewModels
+@using HalisahaMvc.Services
+@model PitchViewModel
+@{
+    Func<System.Collections.Generic.List<RosterPlayerViewModel>, PositionHelper.Category, System.Collections.Generic.List<RosterPlayerViewModel>> byCat =
+        (list, cat) => list.Where(p => PositionHelper.GetCategory(p.MatchPosition) == cat).ToList();
+}
+<div class="pitch">
+    <div class="pitch-half pitch-half-b">
+        @foreach (var cat in new[] { PositionHelper.Category.GK, PositionHelper.Category.DEF, PositionHelper.Category.MID, PositionHelper.Category.FWD })
+        {
+            <div class="pitch-row">
+                @foreach (var p in byCat(Model.TeamB, cat))
+                {
+                    <div class="pitch-card pitch-card-b">
+                        <span class="pitch-card-rating">@Math.Ceiling(p.Rating)</span>
+                        <span class="pitch-card-pos">@PositionHelper.Abbreviation(p.MatchPosition)</span>
+                        <span class="pitch-card-name">@p.Name.Split(' ')[0]</span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+    <div class="pitch-midline"></div>
+    <div class="pitch-half pitch-half-a">
+        @foreach (var cat in new[] { PositionHelper.Category.FWD, PositionHelper.Category.MID, PositionHelper.Category.DEF, PositionHelper.Category.GK })
+        {
+            <div class="pitch-row">
+                @foreach (var p in byCat(Model.TeamA, cat))
+                {
+                    <div class="pitch-card pitch-card-a">
+                        <span class="pitch-card-rating">@Math.Ceiling(p.Rating)</span>
+                        <span class="pitch-card-pos">@PositionHelper.Abbreviation(p.MatchPosition)</span>
+                        <span class="pitch-card-name">@p.Name.Split(' ')[0]</span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

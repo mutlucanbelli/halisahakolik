@@ -1,0 +1,50 @@
+@using System.Linq
+@using HalisahaMvc.Models.ViewModels
+@using HalisahaMvc.Services
+@model HalisahaMvc.Models.Entities.Player
+@{
+    var selected = Model != null ? Model.Positions.Split(',').Select(p => p.Trim()).ToList() : new System.Collections.Generic.List<string>();
+    var mainPosition = Model != null ? PositionHelper.MainPosition(Model.Positions) : "";
+    var existingName = Model != null ? Model.Name : "";
+    var existingGK = Model != null ? Model.RatingGK : 50;
+    var existingDEF = Model != null ? Model.RatingDEF : 50;
+    var existingMID = Model != null ? Model.RatingMID : 50;
+    var existingFWD = Model != null ? Model.RatingFWD : 50;
+}
+<label>Ad Soyad <input type="text" name="name" value="@existingName" required /></label>
+
+<fieldset>
+    <legend>Mevkiler (işaretli olan ilki "ana mevki" seçilmemişse otomatik ana mevki olur; ana mevki için sağdaki radyo düğmesini kullanın)</legend>
+    @foreach (var pos in SelectablePositions.All)
+    {
+        var isSelected = selected.Contains(pos);
+        var isMain = mainPosition == pos;
+        <label class="position-checkbox">
+            @if (isSelected)
+            {
+                <input type="checkbox" name="selectedPositions" value="@pos" checked="checked" />
+            }
+            else
+            {
+                <input type="checkbox" name="selectedPositions" value="@pos" />
+            }
+            @pos
+            @if (isMain)
+            {
+                <input type="radio" name="mainPosition" value="@pos" checked="checked" title="Ana Mevki" />
+            }
+            else
+            {
+                <input type="radio" name="mainPosition" value="@pos" title="Ana Mevki" />
+            }
+        </label>
+    }
+</fieldset>
+
+<fieldset>
+    <legend>Mevki Puanları</legend>
+    <label>Kaleci (GK) <input type="number" step="0.1" name="ratingGK" value="@existingGK" /></label>
+    <label>Defans (DEF) <input type="number" step="0.1" name="ratingDEF" value="@existingDEF" /></label>
+    <label>Orta Saha (MID) <input type="number" step="0.1" name="ratingMID" value="@existingMID" /></label>
+    <label>Forvet/Kanat (FWD) <input type="number" step="0.1" name="ratingFWD" value="@existingFWD" /></label>
+</fieldset>

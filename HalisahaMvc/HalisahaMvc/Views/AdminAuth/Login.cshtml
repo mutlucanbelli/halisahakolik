@@ -1,0 +1,22 @@
+@{
+    ViewBag.Title = "Yönetici Girişi";
+}
+<div class="auth-shell">
+    <h1>HalısahaKolik</h1>
+    <h2>Yönetici Girişi</h2>
+
+    @if (TempData["LoginError"] != null)
+    {
+        <div class="error-banner">@TempData["LoginError"]</div>
+    }
+
+    @using (Html.BeginForm("Login", "AdminAuth", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+        <label>
+            Şifre
+            <input type="password" name="password" required autofocus />
+        </label>
+        <button type="submit">Giriş Yap</button>
+    }
+</div>

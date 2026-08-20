@@ -1,0 +1,216 @@
+@using System.Linq
+@using HalisahaMvc.Helpers
+@model HalisahaMvc.Models.ViewModels.PlayerDashboardViewModel
+@{
+    ViewBag.Title = "Oyuncu Paneli";
+    var player = Model.CurrentPlayer;
+}
+<div class="player-dashboard"
+     data-has-voting="@(Model.VotingMatch != null ? "true" : "false")"
+     data-next-match-date="@(Model.NextMatch != null ? Model.NextMatch.Date.ToString("o") : "")">
+
+    @if (player.MustChangePassword)
+    {
+        <div class="modal-overlay" id="change-password-modal">
+            <div class="modal-card">
+                <h2>Şifreni Değiştir</h2>
+                <p>Devam etmeden önce güvenliğin için şifreni değiştirmen gerekiyor.</p>
+                @if (TempData["ChangePasswordError"] != null)
+                {
+                    <div class="error-banner">@TempData["ChangePasswordError"]</div>
+                }
+                @using (Html.BeginForm("ChangePassword", "Player", FormMethod.Post, new { id = "change-password-form" }))
+                {
+                    @Html.AntiForgeryToken()
+                    <label>Yeni Şifre <input type="password" name="password" id="cp-password" minlength="4" required /></label>
+                    <label>Şifre (Tekrar) <input type="password" id="cp-password-confirm" minlength="4" required /></label>
+                    <div id="cp-client-error" class="error-banner" style="display:none"></div>
+                    <button type="submit">Şifreyi Güncelle</button>
+                }
+            </div>
+        </div>
+    }
+
+    @if (Model.ActiveVoteTarget != null)
+    {
+        <div class="modal-overlay" id="live-vote-modal"
+             data-match-id="@Model.VotingMatch.Id" data-target-id="@Model.ActiveVoteTarget.Id"
+             data-has-voted="@(Model.HasVotedForActive ? "true" : "false")">
+            <div class="modal-card">
+                <div id="live-vote-pending">
+                    <h2>@Model.ActiveVoteTarget.Name</h2>
+                    <p>Bu oyuncuya kaç puan verirsin?</p>
+                    <div class="vote-rating-display"><span id="vote-rating-value">50</span></div>
+                    <input type="range" min="1" max="100" value="50" id="vote-rating-slider" />
+                    <div class="vote-scale-labels"><span>Çok Kötü (1)</span><span>Çok İyi (100)</span></div>
+                    <button type="button" id="vote-submit-btn">Oyu Gönder</button>
+                </div>
+                <div id="live-vote-success" style="display:none">
+                    <h2>Oyunuz Gönderildi!</h2>
+                    <p>Sıradaki oyuncu için bekleyin.</p>
+                </div>
+            </div>
+        </div>
+    }
+
+    <header class="dashboard-header">
+        <h1>Oyuncu Paneli</h1>
+        <p>Hoş geldin, @player.Name</p>
+    </header>
+
+    <section class="profile-card">
+        <h2>@player.Name</h2>
+        <p>@player.Positions.Replace(",", " - ")</p>
+        <span class="rank-badge">Genel Sıralama: #@Model.MyRank</span>
+    </section>
+
+    <section class="ovr-card">
+        <span class="ovr-value">@Math.Ceiling(player.Rating)</span> <span>OVR</span>
+    </section>
+
+    @if (Model.AwardBadges.Any())
+    {
+        <section class="award-badges">
+            <h3>Haftanın Unvanları &amp; Ödülleri</h3>
+            <div class="award-badges-grid">
+                @foreach (var badge in Model.AwardBadges)
+                {
+                    <div class="award-badge award-badge-@badge.BadgeType">
+                        <strong>@badge.Title</strong>
+                        <span>@badge.PlayerName</span>
+                        <small>@badge.Detail</small>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    @Html.PlayerFormChart(Model.FormChartData)
+
+    <section class="last-match-section">
+        <h3>Son Oynadığım Maç</h3>
+        @if (Model.LastMatch == null)
+        {
+            <p class="empty-state">Henüz tamamlanmış bir maçınız yok.</p>
+        }
+        else
+        {
+            <div class="last-match-body">
+                <div class="last-match-summary">
+                    <span>@Model.LastMatch.Date.ToString("d MMMM yyyy", new System.Globalization.CultureInfo("tr-TR"))</span>
+                    <span>@(Model.LastMatchOwnEntry != null ? Model.LastMatchOwnEntry.Position : "")</span>
+                    @if (Model.LastMatchOwnEntry != null && Model.LastMatchOwnEntry.EarnedRating != null)
+                    {
+                        <span class="badge-emerald">@Math.Ceiling(Model.LastMatchOwnEntry.EarnedRating.Value)</span>
+                    }
+                    else
+                    {
+                        <span>Henüz İşlenmedi</span>
+                    }
+                </div>
+                <div class="last-match-grid">
+                    @if (Model.LastMatchMvpRating > 0)
+                    {
+                        <div class="banner-amber"><strong>MVP</strong><span>@Model.LastMatchMvpName</span><small>@(Model.LastMatchMvpRating)</small></div>
+                    }
+                    @if (Model.LastMatchAnalyst != null)
+                    {
+                        <div class="banner-blue"><strong>Analizci</strong><span>@Model.LastMatchAnalyst.Name</span><small>@(Model.LastMatchAnalyst.Score + "/" + Model.LastMatchAnalyst.VoteCount) İsabet</small></div>
+                    }
+                    @if (Model.LastMatchWorstAnalyst != null && (Model.LastMatchAnalyst == null || Model.LastMatchWorstAnalyst.VoterId != Model.LastMatchAnalyst.VoterId))
+                    {
+                        <div class="banner-rose"><strong>Karavana</strong><span>@Model.LastMatchWorstAnalyst.Name</span><small>@(Model.LastMatchWorstAnalyst.Score + "/" + Model.LastMatchWorstAnalyst.VoteCount) Karavana</small></div>
+                    }
+                </div>
+                @if (Model.HighestVoter != null)
+                {
+                    <div class="voter-refs">
+                        <div>En Yüksek Puanı Veren: <strong>@Model.HighestVoter.Name</strong> (@Model.HighestVoter.Rating)</div>
+                        <div>En Düşük Puanı Veren: <strong>@Model.LowestVoter.Name</strong> (@Model.LowestVoter.Rating)</div>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="next-match-section">
+        <h3>Sıradaki Maç</h3>
+        @if (Model.NextMatch == null)
+        {
+            <p class="empty-state">Şu an bekleyen veya oylamada olan bir maç bulunmuyor.</p>
+        }
+        else
+        {
+            <div class="next-match-body">
+                <div class="next-match-meta">
+                    <span>@Model.NextMatch.Date.ToString("d MMMM yyyy HH:mm", new System.Globalization.CultureInfo("tr-TR"))</span>
+                    <span id="countdown-timer" data-target="@Model.NextMatch.Date.ToString("o")"></span>
+                </div>
+                <div class="my-team-banner my-team-@(Model.MyTeam == "A" ? "a" : Model.MyTeam == "B" ? "b" : "none")">
+                    @(Model.MyTeam == "A" ? "TAKIM A İÇİNDESİN" : Model.MyTeam == "B" ? "TAKIM B İÇİNDESİN" : "KADRODA DEĞİLSİN")
+                </div>
+
+                @Html.Partial("_PitchView", new HalisahaMvc.Models.ViewModels.PitchViewModel { TeamA = Model.TeamA, TeamB = Model.TeamB })
+
+                <div class="roster-columns">
+                    <div class="roster-column roster-a">
+                        <h4>Takım A (@Model.TeamA.Sum(p => Math.Ceiling(p.Rating)))</h4>
+                        @foreach (var p in Model.TeamA)
+                        {
+                            <div class="roster-row @(p.IsMe ? "roster-row-me" : "")">
+                                <span>@p.Name</span><span>@p.MatchPosition</span><span>@Math.Ceiling(p.Rating)</span>
+                            </div>
+                        }
+                    </div>
+                    <div class="roster-column roster-b">
+                        <h4>Takım B (@Model.TeamB.Sum(p => Math.Ceiling(p.Rating)))</h4>
+                        @foreach (var p in Model.TeamB)
+                        {
+                            <div class="roster-row @(p.IsMe ? "roster-row-me" : "")">
+                                <span>@p.Name</span><span>@p.MatchPosition</span><span>@Math.Ceiling(p.Rating)</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </section>
+
+    <section class="leaderboard-section">
+        <h3>Sıralama</h3>
+        <div id="leaderboard-list">
+            @{ int rank = 0; }
+            @foreach (var entry in Model.Leaderboard)
+            {
+                rank++;
+                <div class="leaderboard-row leaderboard-rank-@rank @(rank > 5 ? "leaderboard-hidden" : "") @(entry.IsMe ? "leaderboard-row-me" : "")">
+                    <span class="leaderboard-rank">#@rank</span>
+                    <span>@entry.Name @(entry.IsMe ? "(Sen)" : "")</span>
+                    <span>@entry.MainPosition</span>
+                    <span>@Math.Ceiling(entry.Rating)</span>
+                </div>
+            }
+        </div>
+        @if (Model.Leaderboard.Count > 5)
+        {
+            <button type="button" id="leaderboard-toggle" data-total="@Model.Leaderboard.Count">Tüm Sıralamayı Gör (@Model.Leaderboard.Count Oyuncu)</button>
+        }
+    </section>
+
+    @using (Html.BeginForm("Logout", "Auth", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+        <button type="submit" class="logout-btn">Çıkış Yap</button>
+    }
+
+    <form id="vote-af-form" style="display:none">@Html.AntiForgeryToken()</form>
+</div>
+
+@section scripts {
+    <script>
+        window.HalisahaPlayer = {
+            hasVoting: @(Model.VotingMatch != null ? "true" : "false"),
+            voteUrl: '@Url.Action("SubmitVote", "Player")'
+        };
+    </script>
+}

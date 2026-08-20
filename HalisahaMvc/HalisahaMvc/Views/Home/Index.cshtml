@@ -1,0 +1,26 @@
+@{
+    ViewBag.Title = "Oyuncu Girişi";
+}
+<div class="auth-shell">
+    <h1>HalısahaKolik</h1>
+    <h2>Oyuncu Girişi</h2>
+
+    @if (ViewBag.LoginError != null)
+    {
+        <div class="error-banner">@ViewBag.LoginError</div>
+    }
+
+    @using (Html.BeginForm("Login", "Auth", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+        <label>
+            Kullanıcı Adı
+            <input type="text" name="username" required autofocus />
+        </label>
+        <label>
+            Şifre
+            <input type="password" name="password" required />
+        </label>
+        <button type="submit">Giriş Yap</button>
+    }
+</div>
